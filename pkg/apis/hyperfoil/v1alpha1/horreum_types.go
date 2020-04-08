@@ -96,7 +96,7 @@ type HorreumStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Horreum is the Schema for the horreums API
+// Horreum is the object configuring Horreum performance results repository
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=horreums,scope=Namespaced
 type Horreum struct {
