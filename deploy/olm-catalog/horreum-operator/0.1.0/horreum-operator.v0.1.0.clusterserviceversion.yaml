@@ -11,17 +11,23 @@ metadata:
             "name": "example-horreum"
           },
           "spec": {
+            "route": {
+              "host": "horreum.apps.mycloud.example.com"
+            }
             "keycloak": {
-              "route": "keycloak.apps.mycloud.example.com"
+              "route": {
+                "host": "keycloak.apps.mycloud.example.com"
+              }
             },
             "postgres": {
               "persistentVolumeClaim": "horreum-postgres"
             },
             "report": {
               "persistentVolumeClaim": "hyperfoil-report",
-              "route": "hyperfoil-report.apps.mycloud.example.com"
+              "route": {
+                "host": "hyperfoil-report.apps.mycloud.example.com"
+              }
             },
-            "route": "horreum.apps.mycloud.example.com"
           }
         }
       ]

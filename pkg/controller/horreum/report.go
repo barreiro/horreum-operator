@@ -99,23 +99,6 @@ func reportService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 	}
 }
 
-func reportRoute(cr *hyperfoilv1alpha1.Horreum) *routev1.Route {
-	subdomain := ""
-	if cr.Spec.Keycloak.Route == "" {
-		subdomain = cr.Name + "-report"
-	}
-	return &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-report",
-			Namespace: cr.Namespace,
-		},
-		Spec: routev1.RouteSpec{
-			Host:      cr.Spec.Report.Route,
-			Subdomain: subdomain,
-			To: routev1.RouteTargetReference{
-				Kind: "Service",
-				Name: cr.Name + "-report",
-			},
-		},
-	}
+func reportRoute(cr *hyperfoilv1alpha1.Horreum, r *ReconcileHorreum) (*routev1.Route, error) {
+	return route(cr.Spec.Report.Route, "-report", cr, r)
 }

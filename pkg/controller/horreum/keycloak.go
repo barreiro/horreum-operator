@@ -49,7 +49,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			corev1.EnvVar{
 				Name: "APP_URL",
 				// TODO: this won't work without route set
-				Value: "http://" + withDefault(cr.Spec.Route, "must-set-route.io"),
+				Value: url(cr.Spec.Route, "must-set-route.io"),
 			},
 		},
 		VolumeMounts: []corev1.VolumeMount{
@@ -154,23 +154,6 @@ func keycloakService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 	}
 }
 
-func keycloakRoute(cr *hyperfoilv1alpha1.Horreum) *routev1.Route {
-	subdomain := ""
-	if cr.Spec.Keycloak.Route == "" {
-		subdomain = cr.Name + "-keycloak"
-	}
-	return &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-keycloak",
-			Namespace: cr.Namespace,
-		},
-		Spec: routev1.RouteSpec{
-			Host:      cr.Spec.Keycloak.Route,
-			Subdomain: subdomain,
-			To: routev1.RouteTargetReference{
-				Kind: "Service",
-				Name: cr.Name + "-keycloak",
-			},
-		},
-	}
+func keycloakRoute(cr *hyperfoilv1alpha1.Horreum, r *ReconcileHorreum) (*routev1.Route, error) {
+	return route(cr.Spec.Keycloak.Route, "-keycloak", cr, r)
 }

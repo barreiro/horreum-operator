@@ -94,10 +94,17 @@ spec:
                     Defaults to docker.io/jboss/keycloak:latest
                   type: string
                 route:
-                  description: Hostname to be used for external access to the Keycloak
+                  description: Route to be used for external access to the Keycloak
                     instance. When `external` is set to true, this will be used for
                     internal access as well.
-                  type: string
+                  type: object
+                  properties:
+                    host:
+                      description: Hostname for external access.
+                      type: string
+                    tls:
+                      description: Optional; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
+                      type: string
               type: object
             postgres:
               description: PostgreSQL specification
@@ -136,12 +143,26 @@ spec:
                     ephemeral storage will be used.
                   type: string
                 route:
-                  description: Hostname for external access.
-                  type: string
+                  description: Route for external access.
+                  type: object
+                  properties:
+                    host:
+                      description: Hostname for external access.
+                      type: string
+                    tls:
+                      description: Optional; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
+                      type: string
               type: object
             route:
-              description: Hostname for external access.
-              type: string
+              description: Route for external access.
+              type: object
+              properties:
+                host:
+                  description: Hostname for external access.
+                  type: string
+                tls:
+                  description: Optional; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
+                  type: string
           type: object
         status:
           description: HorreumStatus defines the observed state of Horreum

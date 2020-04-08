@@ -16,15 +16,23 @@ type DatabaseSpec struct {
 	Secret string `json:"secret,omitempty"`
 }
 
+// RouteSpec defines the route
+type RouteSpec struct {
+	// Hostname for external access
+	Host string `json:"host,omitempty"`
+	// Optional; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
+	TLS string `json:"tls,omitempty"`
+}
+
 // KeycloakSpec defines Keycloak setup
 type KeycloakSpec struct {
 	// Set to true if the Keycloak instance should not be deployed
 	External bool `json:"external,omitempty"`
 	// Image that should be used for Keycloak deployment. Defaults to docker.io/jboss/keycloak:latest
 	Image string `json:"image,omitempty"`
-	// Hostname to be used for external access to the Keycloak instance.
+	// Route for external access to the Keycloak instance.
 	// When `external` is set to true, this will be used for internal access as well.
-	Route string `json:"route,omitempty"`
+	Route RouteSpec `json:"route,omitempty"`
 	// Secret used for admin access to the deployed Keycloak instance. Created if does not exist.
 	// Must contain keys `username` and `password`.
 	AdminSecret string `json:"adminSecret,omitempty"`
@@ -54,15 +62,15 @@ type ReportSpec struct {
 	// Image of the report tool. Defaults to quay.io/hyperfoil/hyperfoil-report:latest
 	Image string `json:"image,omitempty"`
 	// Hostname for external access.
-	Route string `json:"route,omitempty"`
+	Route RouteSpec `json:"route,omitempty"`
 	// Name of PVC where the reports will be stored. If empty, ephemeral storage will be used.
 	PersistentVolumeClaim string `json:"persistentVolumeClaim,omitempty"`
 }
 
 // HorreumSpec defines the desired state of Horreum
 type HorreumSpec struct {
-	// Hostname for external access.
-	Route string `json:"route,omitempty"`
+	// Route for external access
+	Route RouteSpec `json:"route,omitempty"`
 	// Horreum image. Defaults to quay.io/hyperfoil/horreum:latest
 	Image string `json:"image,omitempty"`
 	// Database coordinates for Horreum data. Besides `username` and `password` the secret must

@@ -11,7 +11,7 @@ import (
 func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 	keycloakURL := "http://" + cr.Name + "-keycloak." + cr.Namespace + ".svc"
 	if cr.Spec.Keycloak.External {
-		keycloakURL = "http://" + cr.Spec.Keycloak.Route
+		keycloakURL = url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io")
 	}
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -115,7 +115,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						},
 						corev1.EnvVar{
 							Name:  "REPO_KEYCLOAK_URL",
-							Value: "http://" + withDefault(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io") + "/auth",
+							Value: url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io") + "/auth",
 						},
 					},
 					VolumeMounts: []corev1.VolumeMount{
@@ -163,23 +163,6 @@ func appService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 	}
 }
 
-func appRoute(cr *hyperfoilv1alpha1.Horreum) *routev1.Route {
-	subdomain := ""
-	if cr.Spec.Keycloak.Route == "" {
-		subdomain = cr.Name
-	}
-	return &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name,
-			Namespace: cr.Namespace,
-		},
-		Spec: routev1.RouteSpec{
-			Host:      cr.Spec.Route,
-			Subdomain: subdomain,
-			To: routev1.RouteTargetReference{
-				Kind: "Service",
-				Name: cr.Name,
-			},
-		},
-	}
+func appRoute(cr *hyperfoilv1alpha1.Horreum, r *ReconcileHorreum) (*routev1.Route, error) {
+	return route(cr.Spec.Route, "", cr, r)
 }

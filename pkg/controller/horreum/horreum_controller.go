@@ -168,7 +168,10 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	keycloakPod := keycloakPod(instance)
 	keycloakService := keycloakService(instance)
-	keycloakRoute := keycloakRoute(instance)
+	keycloakRoute, err := keycloakRoute(instance, r)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	if instance.Spec.Keycloak.External {
 		if err := ensureDeleted(r, instance, keycloakPod, &corev1.Pod{}); err != nil {
 			return reconcile.Result{}, err
@@ -199,7 +202,10 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 	if err := ensureSame(r, instance, logger, appService, &corev1.Service{}, compareService, nocheck); err != nil {
 		return reconcile.Result{}, err
 	}
-	appRoute := appRoute(instance)
+	appRoute, err := appRoute(instance, r)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	if err := ensureSame(r, instance, logger, appRoute, &routev1.Route{}, compareRoute, checkRoute); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -213,7 +219,10 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 		if err := ensureSame(r, instance, logger, reportService, &corev1.Service{}, compareService, nocheck); err != nil {
 			return reconcile.Result{}, err
 		}
-		reportRoute := reportRoute(instance)
+		reportRoute, err := reportRoute(instance, r)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 		if err := ensureSame(r, instance, logger, reportRoute, &routev1.Route{}, compareRoute, checkRoute); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -365,7 +374,7 @@ func compareContainers(c1 *corev1.Container, c2 *corev1.Container, logger logr.L
 func uploadConfig(cr *hyperfoilv1alpha1.Horreum) *corev1.ConfigMap {
 	keycloakURL := `http://` + cr.Name + "-keycloak." + cr.Namespace + `.svc`
 	if cr.Spec.Keycloak.External {
-		keycloakURL = "http://" + cr.Spec.Keycloak.Route
+		keycloakURL = url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io")
 	}
 	horreumURL := `http://` + cr.Name + "." + cr.Namespace + `.svc`
 	return &corev1.ConfigMap{
@@ -458,7 +467,14 @@ func compareRoute(i1, i2 interface{}, logger logr.Logger) bool {
 	if r1.Spec.Host == "" {
 		return r1.Spec.Subdomain == r2.Spec.Subdomain
 	}
-	return r1.Spec.Host == r2.Spec.Host
+	if r1.Spec.Host != r2.Spec.Host {
+		return false
+	}
+	if !reflect.DeepEqual(r1.Spec.TLS, r2.Spec.TLS) {
+		logger.Info("TLS configuration does not match: " + fmt.Sprintf("%v | %v", r1.Spec.TLS, r2.Spec.TLS))
+		return false
+	}
+	return true
 }
 
 func checkRoute(i interface{}) (bool, string, string) {

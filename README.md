@@ -10,13 +10,16 @@ kind: Horreum
 metadata:
   name: example-horreum
 spec:
-  route: horreum.apps.mycloud.example.com
+  route:
+    host: horreum.apps.mycloud.example.com
   keycloak:
-    route: keycloak.apps.mycloud.example.com
+    route:
+      host: keycloak.apps.mycloud.example.com
   postgres:
     persistentVolumeClaim: horreum-postgres
   report:
-    route: hyperfoil-report.apps.mycloud.example.com
+    route:
+      host: hyperfoil-report.apps.mycloud.example.com
     persistentVolumeClaim: hyperfoil-report
 ```
 
@@ -24,7 +27,9 @@ For detailed description of all properties [refer to the CRD](deploy/olm-catalog
 
 When using persistent volumes make sure that the access rights are set correctly and the pods have write access; in particular the PostgreSQL database requires that the mapped directory is owned by user with id `999`.
 
-At this point you must set Keycloak route explicitly, otherwise you could not log in (TODO).
+If you're planning to use secured routes (edge termination) it is recommended to set the `tls: my-tls-secret` at the first deploy; otherwise it is necessary to update URLs for clients `hyperfoil-repo` and `hyperfoil-repo-ui` in Keycloak manually. Also the Horreum pod needs to be restarted after keycloak route update.
+
+Currently you must set both Horreum and Keycloak route host explicitly, otherwise you could not log in (TODO).
 
 When the `horreum` resource gets ready, login into Keycloak using administrator credentials (these are automatically created if you don't specify existing secret) and create a new user in the `hyperfoil` realm, a new team role (with `-team` suffix) and assign it to the user along with other appropriate predefined roles. Administrator credentials can be found using this:
 
@@ -35,10 +40,6 @@ oc get secret $NAME-keycloak-admin -o json | \
 ```
 
 For details of roles in Horreum please refer to [its documentation](https://github.com/Hyperfoil/Horreum)
-
-## TODO
-
-HTTPS is not supported ATM, neither for Horreum nor Keycloak.
 
 ## Hyperfoil integration
 
