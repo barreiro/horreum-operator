@@ -127,20 +127,24 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	dbAdminSecret := newSecret(instance, dbAdminSecret(instance))
-	if err := ensureSame(r, instance, logger, dbAdminSecret, &corev1.Secret{}, nocompare, checkSecret("user", "password")); err != nil {
+	if err := ensureSame(r, instance, logger, dbAdminSecret, &corev1.Secret{}, nocompare,
+		checkSecret(corev1.BasicAuthUsernameKey, corev1.BasicAuthPasswordKey)); err != nil {
 		return reconcile.Result{}, err
 	}
 	appSecret := newSecret(instance, appUserSecret(instance))
 	appSecret.StringData["dbsecret"] = generatePassword()
-	if err := ensureSame(r, instance, logger, appSecret, &corev1.Secret{}, nocompare, checkSecret("user", "password", "dbsecret")); err != nil {
+	if err := ensureSame(r, instance, logger, appSecret, &corev1.Secret{}, nocompare,
+		checkSecret(corev1.BasicAuthUsernameKey, corev1.BasicAuthPasswordKey, "dbsecret")); err != nil {
 		return reconcile.Result{}, err
 	}
 	keycloakAdminSecret := newSecret(instance, keycloakAdminSecret(instance))
-	if err := ensureSame(r, instance, logger, keycloakAdminSecret, &corev1.Secret{}, nocompare, checkSecret("user", "password")); err != nil {
+	if err := ensureSame(r, instance, logger, keycloakAdminSecret, &corev1.Secret{}, nocompare,
+		checkSecret(corev1.BasicAuthUsernameKey, corev1.BasicAuthPasswordKey)); err != nil {
 		return reconcile.Result{}, err
 	}
 	keycloakDbSecret := newSecret(instance, keycloakDbSecret(instance))
-	if err := ensureSame(r, instance, logger, keycloakDbSecret, &corev1.Secret{}, nocompare, checkSecret("user", "password")); err != nil {
+	if err := ensureSame(r, instance, logger, keycloakDbSecret, &corev1.Secret{}, nocompare,
+		checkSecret(corev1.BasicAuthUsernameKey, corev1.BasicAuthPasswordKey)); err != nil {
 		return reconcile.Result{}, err
 	}
 

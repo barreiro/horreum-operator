@@ -41,8 +41,8 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						`,
 					},
 					Env: []corev1.EnvVar{
-						secretEnv("KEYCLOAK_USER", keycloakAdminSecret(cr), "user"),
-						secretEnv("KEYCLOAK_PASSWORD", keycloakAdminSecret(cr), "password"),
+						secretEnv("KEYCLOAK_USER", keycloakAdminSecret(cr), corev1.BasicAuthUsernameKey),
+						secretEnv("KEYCLOAK_PASSWORD", keycloakAdminSecret(cr), corev1.BasicAuthPasswordKey),
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						corev1.VolumeMount{
@@ -79,8 +79,8 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						`,
 					},
 					Env: append(databaseAccessEnvVars(cr),
-						secretEnv("APP_USER", appUserSecret(cr), "user"),
-						secretEnv("APP_PASSWORD", appUserSecret(cr), "password"),
+						secretEnv("APP_USER", appUserSecret(cr), corev1.BasicAuthUsernameKey),
+						secretEnv("APP_PASSWORD", appUserSecret(cr), corev1.BasicAuthPasswordKey),
 						secretEnv("APP_DB_SECRET", appUserSecret(cr), "dbsecret"),
 					),
 					VolumeMounts: []corev1.VolumeMount{
@@ -106,8 +106,8 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							Name:  "QUARKUS_DATASOURCE_URL",
 							Value: dbURL(cr, &cr.Spec.Database, "horreum"),
 						},
-						secretEnv("QUARKUS_DATASOURCE_USERNAME", appUserSecret(cr), "user"),
-						secretEnv("QUARKUS_DATASOURCE_PASSWORD", appUserSecret(cr), "password"),
+						secretEnv("QUARKUS_DATASOURCE_USERNAME", appUserSecret(cr), corev1.BasicAuthUsernameKey),
+						secretEnv("QUARKUS_DATASOURCE_PASSWORD", appUserSecret(cr), corev1.BasicAuthPasswordKey),
 						secretEnv("REPO_DB_SECRET", appUserSecret(cr), "dbsecret"),
 						corev1.EnvVar{
 							Name:  "QUARKUS_OIDC_AUTH_SERVER_URL",

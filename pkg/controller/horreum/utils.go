@@ -30,9 +30,10 @@ func newSecret(cr *hyperfoilv1alpha1.Horreum, name string) *corev1.Secret {
 			Name:      name,
 			Namespace: cr.Namespace,
 		},
+		Type: corev1.SecretTypeBasicAuth,
 		StringData: map[string]string{
-			"user":     name,
-			"password": generatePassword(),
+			corev1.BasicAuthUsernameKey: name,
+			corev1.BasicAuthPasswordKey: generatePassword(),
 		},
 	}
 }

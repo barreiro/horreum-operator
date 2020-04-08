@@ -41,8 +41,8 @@ func postgresPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							Name:  "POSTGRES_DB",
 							Value: withDefault(cr.Spec.Database.Name, "horreum"),
 						},
-						secretEnv("POSTGRES_USER", dbAdminSecret(cr), "user"),
-						secretEnv("POSTGRES_PASSWORD", dbAdminSecret(cr), "password"),
+						secretEnv("POSTGRES_USER", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
+						secretEnv("POSTGRES_PASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
 					},
 					Ports: []corev1.ContainerPort{
 						corev1.ContainerPort{

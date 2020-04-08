@@ -12,7 +12,7 @@ type DatabaseSpec struct {
 	Port int32 `json:"port,omitempty"`
 	// Name of the database
 	Name string `json:"name,omitempty"`
-	// Name of secret resource with data `user` and `password`. Created if does not exist.
+	// Name of secret resource with data `username` and `password`. Created if does not exist.
 	Secret string `json:"secret,omitempty"`
 }
 
@@ -26,7 +26,7 @@ type KeycloakSpec struct {
 	// When `external` is set to true, this will be used for internal access as well.
 	Route string `json:"route,omitempty"`
 	// Secret used for admin access to the deployed Keycloak instance. Created if does not exist.
-	// Must contain keys `user` and `password`.
+	// Must contain keys `username` and `password`.
 	AdminSecret string `json:"adminSecret,omitempty"`
 	// Database coordinates Keycloak should use
 	Database DatabaseSpec `json:"database,omitempty"`
@@ -41,7 +41,7 @@ type PostgresSpec struct {
 	// Image used for PostgreSQL deployment. Defaults to docker.io/postgres:12
 	Image string `json:"image,omitempty"`
 	// Secret used for unrestricted access to the database. Created if does not exist.
-	// Must contain keys `user` and `password`.
+	// Must contain keys `username` and `password`.
 	AdminSecret string `json:"adminSecret,omitempty"`
 	// Name of PVC where the database will store the data. If empty, ephemeral storage will be used.
 	PersistentVolumeClaim string `json:"persistentVolumeClaim,omitempty"`
@@ -65,7 +65,7 @@ type HorreumSpec struct {
 	Route string `json:"route,omitempty"`
 	// Horreum image. Defaults to quay.io/hyperfoil/horreum:latest
 	Image string `json:"image,omitempty"`
-	// Database coordinates for Horreum data. Besides `user` and `password` the secret must
+	// Database coordinates for Horreum data. Besides `username` and `password` the secret must
 	// also contain key `dbsecret` that will be used to sign access to the database.
 	Database DatabaseSpec `json:"database,omitempty"`
 	// Keycloak specification

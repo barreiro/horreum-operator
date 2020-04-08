@@ -37,7 +37,7 @@ spec:
           description: HorreumSpec defines the desired state of Horreum
           properties:
             database:
-              description: Database coordinates for Horreum data. Besides `user` and
+              description: Database coordinates for Horreum data. Besides `username` and
                 `password` the secret must also contain key `dbsecret` that will be
                 used to sign access to the database.
               properties:
@@ -52,7 +52,7 @@ spec:
                   format: int32
                   type: integer
                 secret:
-                  description: Name of secret resource with data `user` and `password`.
+                  description: Name of secret resource with data `username` and `password`.
                     Created if does not exist.
                   type: string
               type: object
@@ -64,7 +64,7 @@ spec:
               properties:
                 adminSecret:
                   description: Secret used for admin access to the deployed Keycloak
-                    instance. Created if does not exist. Must contain keys `user`
+                    instance. Created if does not exist. Must contain keys `username`
                     and `password`.
                   type: string
                 database:
@@ -81,7 +81,7 @@ spec:
                       format: int32
                       type: integer
                     secret:
-                      description: Name of secret resource with data `user` and `password`.
+                      description: Name of secret resource with data `username` and `password`.
                         Created if does not exist.
                       type: string
                   type: object
@@ -104,7 +104,7 @@ spec:
               properties:
                 adminSecret:
                   description: Secret used for unrestricted access to the database.
-                    Created if does not exist. Must contain keys `user` and `password`.
+                    Created if does not exist. Must contain keys `username` and `password`.
                   type: string
                 externalHost:
                   description: Hostname of the external database. If empty, database

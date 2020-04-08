@@ -60,7 +60,7 @@ func databaseAccessEnvVars(cr *hyperfoilv1alpha1.Horreum) []corev1.EnvVar {
 			Name:  "PGDATABASE",
 			Value: withDefault(cr.Spec.Database.Name, "horreum"),
 		},
-		secretEnv("PGUSER", dbAdminSecret(cr), "user"),
-		secretEnv("PGPASSWORD", dbAdminSecret(cr), "password"),
+		secretEnv("PGUSER", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
+		secretEnv("PGPASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
 	}
 }

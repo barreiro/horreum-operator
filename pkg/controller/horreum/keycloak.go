@@ -30,8 +30,8 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			Image:   dbImage(cr),
 			Command: []string{"bash", "-x", "-c", script},
 			Env: append(databaseAccessEnvVars(cr),
-				secretEnv("KEYCLOAK_USER", keycloakDbSecret(cr), "user"),
-				secretEnv("KEYCLOAK_PASSWORD", keycloakDbSecret(cr), "password"),
+				secretEnv("KEYCLOAK_USER", keycloakDbSecret(cr), corev1.BasicAuthUsernameKey),
+				secretEnv("KEYCLOAK_PASSWORD", keycloakDbSecret(cr), corev1.BasicAuthPasswordKey),
 			),
 		})
 	}
@@ -82,8 +82,8 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						"-Dkeycloak.migration.strategy=IGNORE_EXISTING",
 					},
 					Env: []corev1.EnvVar{
-						secretEnv("KEYCLOAK_USER", keycloakAdminSecret(cr), "user"),
-						secretEnv("KEYCLOAK_PASSWORD", keycloakAdminSecret(cr), "password"),
+						secretEnv("KEYCLOAK_USER", keycloakAdminSecret(cr), corev1.BasicAuthUsernameKey),
+						secretEnv("KEYCLOAK_PASSWORD", keycloakAdminSecret(cr), corev1.BasicAuthPasswordKey),
 						corev1.EnvVar{
 							Name:  "DB_VENDOR",
 							Value: "postgres",
@@ -100,8 +100,8 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							Name:  "DB_DATABASE",
 							Value: withDefault(cr.Spec.Keycloak.Database.Name, "keycloak"),
 						},
-						secretEnv("DB_USER", keycloakDbSecret(cr), "user"),
-						secretEnv("DB_PASSWORD", keycloakDbSecret(cr), "password"),
+						secretEnv("DB_USER", keycloakDbSecret(cr), corev1.BasicAuthUsernameKey),
+						secretEnv("DB_PASSWORD", keycloakDbSecret(cr), corev1.BasicAuthPasswordKey),
 					},
 					Ports: []corev1.ContainerPort{
 						corev1.ContainerPort{
