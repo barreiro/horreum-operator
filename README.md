@@ -27,7 +27,7 @@ For detailed description of all properties [refer to the CRD](deploy/olm-catalog
 
 When using persistent volumes make sure that the access rights are set correctly and the pods have write access; in particular the PostgreSQL database requires that the mapped directory is owned by user with id `999`.
 
-If you're planning to use secured routes (edge termination) it is recommended to set the `tls: my-tls-secret` at the first deploy; otherwise it is necessary to update URLs for clients `hyperfoil-repo` and `hyperfoil-repo-ui` in Keycloak manually. Also the Horreum pod needs to be restarted after keycloak route update.
+If you're planning to use secured routes (edge termination) it is recommended to set the `tls: my-tls-secret` at the first deploy; otherwise it is necessary to update URLs for clients `horreum` and `horreum-ui` in Keycloak manually. Also the Horreum pod needs to be restarted after keycloak route update.
 
 Currently you must set both Horreum and Keycloak route host explicitly, otherwise you could not log in (TODO).
 
@@ -52,7 +52,7 @@ HORREUM_PASSWORD=password
 # Role for the team the user belongs to (something you've created)
 HORREUM_GROUP=engineers-team
 # This is a non-confidential client ID we'll reuse to login for upload
-HORREUM_CLIENT_ID=hyperfoil-repo-ui
+HORREUM_CLIENT_ID=horreum-ui
 
 oc create secret generic hyperfoil-horreum \
     --from-literal=HORREUM_USER=$HORREUM_USER \

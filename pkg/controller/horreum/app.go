@@ -34,7 +34,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							cp /deployments/imports/* /etc/horreum/imports
 							export KC_URL='` + keycloakURL + `'
 							export TOKEN=$$(curl -s $KC_URL/auth/realms/master/protocol/openid-connect/token -X POST -H 'content-type: application/x-www-form-urlencoded' -d 'username=$(KEYCLOAK_USER)&password=$(KEYCLOAK_PASSWORD)&grant_type=password&client_id=admin-cli' -s | jq -r .access_token)
-							export CLIENTID=$$(curl -s $KC_URL/auth/admin/realms/hyperfoil/clients -H 'Authorization: Bearer '$TOKEN | jq -r '.[] | select(.clientId=="hyperfoil-repo") | .id')
+							export CLIENTID=$$(curl -s $KC_URL/auth/admin/realms/hyperfoil/clients -H 'Authorization: Bearer '$TOKEN | jq -r '.[] | select(.clientId=="horreum") | .id')
 							export CLIENTSECRET=$$(curl -s $KC_URL/auth/admin/realms/hyperfoil/clients/$CLIENTID/client-secret -H 'Authorization: Bearer '$TOKEN | jq -r '.value')
 							[ -n "$CLIENTSECRET" ] || exit 1;
 							echo $CLIENTSECRET > /etc/horreum/imports/clientsecret

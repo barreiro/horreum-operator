@@ -40,7 +40,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 		Image:           appImage(cr),
 		ImagePullPolicy: corev1.PullAlways,
 		Command: []string{
-			"sh", "-x", "-c", `jq -r '.clients |= map(if .clientId | startswith("hyperfoil-repo") then ` +
+			"sh", "-x", "-c", `jq -r '.clients |= map(if .clientId | startswith("horreum") then ` +
 				`(.rootUrl = "$(APP_URL)/") | (.adminUrl = "$(APP_URL)") | ` +
 				`(.webOrigins = [ "$(APP_URL)" ]) | (.redirectUris = [ "$(APP_URL)/*"]) else . end)' ` +
 				`/deployments/imports/keycloak-hyperfoil.json > /etc/keycloak/imports/keycloak-hyperfoil.json`,
