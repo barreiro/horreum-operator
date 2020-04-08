@@ -168,15 +168,16 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	keycloakPod := keycloakPod(instance)
 	keycloakService := keycloakService(instance)
-	keycloakRoute, err := keycloakRoute(instance, r)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
+	keycloakServiceSecure := keycloakServiceSecure(instance)
+	keycloakRoute := keycloakRoute(instance)
 	if instance.Spec.Keycloak.External {
 		if err := ensureDeleted(r, instance, keycloakPod, &corev1.Pod{}); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err := ensureDeleted(r, instance, keycloakService, &corev1.Service{}); err != nil {
+			return reconcile.Result{}, err
+		}
+		if err := ensureDeleted(r, instance, keycloakServiceSecure, &corev1.Service{}); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err := ensureDeleted(r, instance, keycloakRoute, &routev1.Route{}); err != nil {
@@ -187,6 +188,9 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 			return reconcile.Result{}, err
 		}
 		if err := ensureSame(r, instance, logger, keycloakService, &corev1.Service{}, compareService, nocheck); err != nil {
+			return reconcile.Result{}, err
+		}
+		if err := ensureSame(r, instance, logger, keycloakServiceSecure, &corev1.Service{}, compareService, nocheck); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err := ensureSame(r, instance, logger, keycloakRoute, &routev1.Route{}, compareRoute, checkRoute); err != nil {

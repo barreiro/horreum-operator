@@ -17,7 +17,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			if psql -t -c "SELECT 1 FROM pg_roles WHERE rolname = '$(KEYCLOAK_USER)';" | grep -q 1; then
                 echo "Database role $(KEYCLOAK_USER) already exists.";
 			else
-				psql -c "CREATE ROLE $(KEYCLOAK_USER) noinherit login password '$(KEYCLOAK_PASSWORD)';";
+				psql -c "CREATE ROLE \"$(KEYCLOAK_USER)\" noinherit login password '$(KEYCLOAK_PASSWORD)';";
 			fi
 			if psql -t -c "SELECT 1 FROM pg_database WHERE datname = '` + dbName + `';" | grep -q 1; then
 			    echo "Database "` + dbName + `" already exists.";
@@ -59,6 +59,35 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			},
 		},
 	})
+	volumes := []corev1.Volume{
+		corev1.Volume{
+			Name: "imports",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+	}
+	volumeMounts := []corev1.VolumeMount{
+		corev1.VolumeMount{
+			Name:      "imports",
+			MountPath: "/etc/keycloak/imports",
+		},
+	}
+	if cr.Spec.Keycloak.Route.TLS != "" {
+		// TODO: setup X509_CA_BUNDLE
+		volumes = append(volumes, corev1.Volume{
+			Name: "certs",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: cr.Spec.Keycloak.Route.TLS,
+				},
+			},
+		})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      "certs",
+			MountPath: "/etc/x509/https",
+		})
+	}
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-keycloak",
@@ -109,22 +138,10 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							ContainerPort: 8080,
 						},
 					},
-					VolumeMounts: []corev1.VolumeMount{
-						corev1.VolumeMount{
-							Name:      "imports",
-							MountPath: "/etc/keycloak/imports",
-						},
-					},
+					VolumeMounts: volumeMounts,
 				},
 			},
-			Volumes: []corev1.Volume{
-				corev1.Volume{
-					Name: "imports",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
-					},
-				},
-			},
+			Volumes: volumes,
 		},
 	}
 }
@@ -154,6 +171,58 @@ func keycloakService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 	}
 }
 
-func keycloakRoute(cr *hyperfoilv1alpha1.Horreum, r *ReconcileHorreum) (*routev1.Route, error) {
-	return route(cr.Spec.Keycloak.Route, "-keycloak", cr, r)
+func keycloakServiceSecure(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
+	// Openshift routes cannot select port
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name + "-keycloak-secure",
+			Namespace: cr.Namespace,
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeClusterIP,
+			Ports: []corev1.ServicePort{
+				corev1.ServicePort{
+					Name: "https",
+					Port: int32(443),
+					TargetPort: intstr.IntOrString{
+						IntVal: 8443,
+					},
+				},
+			},
+			Selector: map[string]string{
+				"app":     cr.Name,
+				"service": "keycloak",
+			},
+		},
+	}
+}
+
+func keycloakRoute(cr *hyperfoilv1alpha1.Horreum) *routev1.Route {
+	subdomain := ""
+	if cr.Spec.Keycloak.Route.Host == "" {
+		subdomain = cr.Name + "-keycloak"
+	}
+	svc := cr.Name + "-keycloak-secure"
+	tls := &routev1.TLSConfig{
+		Termination: routev1.TLSTerminationPassthrough,
+	}
+	if cr.Spec.Keycloak.Route.TLS == "" {
+		svc = cr.Name + "-keycloak"
+		tls = nil
+	}
+	return &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name + "-keycloak",
+			Namespace: cr.Namespace,
+		},
+		Spec: routev1.RouteSpec{
+			Host:      cr.Spec.Keycloak.Route.Host,
+			Subdomain: subdomain,
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: svc,
+			},
+			TLS: tls,
+		},
+	}
 }

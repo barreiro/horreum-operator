@@ -67,7 +67,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							if psql -t -c "SELECT 1 FROM pg_roles WHERE rolname = '$(APP_USER)';" | grep -q 1; then
 								echo "Database role $(APP_USER) already exists.";
 							else
-								psql -c "CREATE ROLE $(APP_USER) noinherit login password '$(APP_PASSWORD)';"
+								psql -c "CREATE ROLE \"$(APP_USER)\" noinherit login password '$(APP_PASSWORD)';"
 							fi
 							if [ $$(psql -t -c "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='$(APP_USER)';") == "0" ]; then
 								psql -c "GRANT select, insert, delete, update ON ALL TABLES IN SCHEMA public TO $(APP_USER);"
