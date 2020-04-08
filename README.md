@@ -31,7 +31,7 @@ If you're planning to use secured routes (edge termination) it is recommended to
 
 Currently you must set both Horreum and Keycloak route host explicitly, otherwise you could not log in (TODO).
 
-When the `horreum` resource gets ready, login into Keycloak using administrator credentials (these are automatically created if you don't specify existing secret) and create a new user in the `hyperfoil` realm, a new team role (with `-team` suffix) and assign it to the user along with other appropriate predefined roles. Administrator credentials can be found using this:
+When the `horreum` resource gets ready, login into Keycloak using administrator credentials (these are automatically created if you don't specify existing secret) and create a new user in the `horreum` realm, a new team role (with `-team` suffix) and assign it to the user along with other appropriate predefined roles. Administrator credentials can be found using this:
 
 ```sh
 NAME=$(oc get horreum -o jsonpath='{$.items[0].metadata.name}')

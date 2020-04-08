@@ -33,9 +33,9 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						"sh", "-x", "-c", `
 							cp /deployments/imports/* /etc/horreum/imports
 							export KC_URL='` + keycloakURL + `'
-							export TOKEN=$$(curl -s $KC_URL/auth/realms/master/protocol/openid-connect/token -X POST -H 'content-type: application/x-www-form-urlencoded' -d 'username=$(KEYCLOAK_USER)&password=$(KEYCLOAK_PASSWORD)&grant_type=password&client_id=admin-cli' -s | jq -r .access_token)
-							export CLIENTID=$$(curl -s $KC_URL/auth/admin/realms/hyperfoil/clients -H 'Authorization: Bearer '$TOKEN | jq -r '.[] | select(.clientId=="horreum") | .id')
-							export CLIENTSECRET=$$(curl -s $KC_URL/auth/admin/realms/hyperfoil/clients/$CLIENTID/client-secret -H 'Authorization: Bearer '$TOKEN | jq -r '.value')
+							export TOKEN=$$(curl -s $KC_URL/auth/realms/master/protocol/openid-connect/token -X POST -H 'content-type: application/x-www-form-urlencoded' -d 'username=$(KEYCLOAK_USER)&password=$(KEYCLOAK_PASSWORD)&grant_type=password&client_id=admin-cli' | jq -r .access_token)
+							export CLIENTID=$$(curl -s $KC_URL/auth/admin/realms/horreum/clients -H 'Authorization: Bearer '$TOKEN | jq -r '.[] | select(.clientId=="horreum") | .id')
+							export CLIENTSECRET=$$(curl -s $KC_URL/auth/admin/realms/horreum/clients/$CLIENTID/client-secret -X POST -H 'Authorization: Bearer '$TOKEN | jq -r '.value')
 							[ -n "$CLIENTSECRET" ] || exit 1;
 							echo $CLIENTSECRET > /etc/horreum/imports/clientsecret
 						`,
@@ -70,9 +70,9 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 								psql -c "CREATE ROLE \"$(APP_USER)\" noinherit login password '$(APP_PASSWORD)';"
 							fi
 							if [ $$(psql -t -c "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='$(APP_USER)';") == "0" ]; then
-								psql -c "GRANT select, insert, delete, update ON ALL TABLES IN SCHEMA public TO $(APP_USER);"
-								psql -c "REVOKE ALL ON dbsecret FROM $(APP_USER);"
-								psql -c "GRANT ALL ON ALL sequences IN SCHEMA public TO $(APP_USER);"
+								psql -c "GRANT select, insert, delete, update ON ALL TABLES IN SCHEMA public TO \"$(APP_USER)\";"
+								psql -c "REVOKE ALL ON dbsecret FROM \"$(APP_USER)\";"
+								psql -c "GRANT ALL ON ALL sequences IN SCHEMA public TO \"$(APP_USER)\";"
 							else
 								echo "Role seems to already have some table grants."
 							fi
@@ -111,7 +111,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						secretEnv("REPO_DB_SECRET", appUserSecret(cr), "dbsecret"),
 						corev1.EnvVar{
 							Name:  "QUARKUS_OIDC_AUTH_SERVER_URL",
-							Value: keycloakURL + "/auth/realms/hyperfoil",
+							Value: keycloakURL + "/auth/realms/horreum",
 						},
 						corev1.EnvVar{
 							Name:  "REPO_KEYCLOAK_URL",

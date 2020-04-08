@@ -43,7 +43,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			"sh", "-x", "-c", `jq -r '.clients |= map(if .clientId | startswith("horreum") then ` +
 				`(.rootUrl = "$(APP_URL)/") | (.adminUrl = "$(APP_URL)") | ` +
 				`(.webOrigins = [ "$(APP_URL)" ]) | (.redirectUris = [ "$(APP_URL)/*"]) else . end)' ` +
-				`/deployments/imports/keycloak-hyperfoil.json > /etc/keycloak/imports/keycloak-hyperfoil.json`,
+				`/deployments/imports/keycloak-horreum.json > /etc/keycloak/imports/keycloak-horreum.json`,
 		},
 		Env: []corev1.EnvVar{
 			corev1.EnvVar{
@@ -107,7 +107,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						"-Dkeycloak.profile.feature.upload_scripts=enabled",
 						"-Dkeycloak.migration.action=import",
 						"-Dkeycloak.migration.provider=singleFile",
-						"-Dkeycloak.migration.file=/etc/keycloak/imports/keycloak-hyperfoil.json",
+						"-Dkeycloak.migration.file=/etc/keycloak/imports/keycloak-horreum.json",
 						"-Dkeycloak.migration.strategy=IGNORE_EXISTING",
 					},
 					Env: []corev1.EnvVar{
