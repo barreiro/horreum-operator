@@ -51,14 +51,11 @@ HORREUM_USER=user
 HORREUM_PASSWORD=password
 # Role for the team the user belongs to (something you've created)
 HORREUM_GROUP=engineers-team
-# This is a non-confidential client ID we'll reuse to login for upload
-HORREUM_CLIENT_ID=horreum-ui
 
 oc create secret generic hyperfoil-horreum \
     --from-literal=HORREUM_USER=$HORREUM_USER \
     --from-literal=HORREUM_PASSWORD=$HORREUM_PASSWORD \
     --from-literal=HORREUM_GROUP=$HORREUM_GROUP \
-    --from-literal=HORREUM_CLIENT_ID=$HORREUM_CLIENT_ID \
 ```
 
 Then set it up in the `hyperfoil` resource:

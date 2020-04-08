@@ -73,6 +73,10 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		IsController: true,
 		OwnerType:    &hyperfoilv1alpha1.Horreum{},
 	})
+	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &hyperfoilv1alpha1.Horreum{},
+	})
 	if err != nil {
 		return err
 	}
@@ -390,9 +394,9 @@ func uploadConfig(cr *hyperfoilv1alpha1.Horreum) *corev1.ConfigMap {
 			"50-upload-to-horreum": `
 			#!/bin/bash
 
-			TOKEN=$(curl -s -X POST	` + keycloakURL + `/auth/realms/hyperfoil/protocol/openid-connect/token ` +
+			TOKEN=$(curl -s -X POST	` + keycloakURL + `/auth/realms/horreum/protocol/openid-connect/token ` +
 				` -H 'content-type: application/x-www-form-urlencoded' ` +
-				` -d	'username='$HORREUM_USER'&password='$HORREUM_PASSWORD'&grant_type=password&client_id='$HORREUM_CLIENT_ID ` +
+				` -d 'username='$HORREUM_USER'&password='$HORREUM_PASSWORD'&grant_type=password&client_id=horreum-ui'` +
 				` | jq -r .access_token)
 
 			curl -s	'` + horreumURL + `/api/run/data?owner='$HORREUM_GROUP'&access=PUBLIC&test=$.info.benchmark&start=$.info.startTime&stop=$.info.terminateTime'` +

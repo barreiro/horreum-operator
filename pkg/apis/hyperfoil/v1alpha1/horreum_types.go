@@ -61,7 +61,7 @@ type ReportSpec struct {
 	Enabled *bool `json:"enabled,omitempty"`
 	// Image of the report tool. Defaults to quay.io/hyperfoil/hyperfoil-report:latest
 	Image string `json:"image,omitempty"`
-	// Hostname for external access.
+	// Route for external access.
 	Route RouteSpec `json:"route,omitempty"`
 	// Name of PVC where the reports will be stored. If empty, ephemeral storage will be used.
 	PersistentVolumeClaim string `json:"persistentVolumeClaim,omitempty"`
