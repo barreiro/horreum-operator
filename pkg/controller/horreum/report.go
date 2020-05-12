@@ -9,16 +9,6 @@ import (
 )
 
 func reportPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
-	var reportsVolumeSource = corev1.VolumeSource{}
-	if cr.Spec.Report.PersistentVolumeClaim != "" {
-		reportsVolumeSource.PersistentVolumeClaim = &corev1.PersistentVolumeClaimVolumeSource{
-			ClaimName: cr.Spec.Report.PersistentVolumeClaim,
-		}
-	} else {
-		reportsVolumeSource.EmptyDir = &corev1.EmptyDirVolumeSource{}
-	}
-	host := "http://" + cr.Name + "-report." + cr.Namespace + ".svc"
-	hookURL := host + "/cgi-bin/convert.sh?prefix=${$.id}-&subpath=.data"
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-report",
@@ -29,22 +19,6 @@ func reportPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			},
 		},
 		Spec: corev1.PodSpec{
-			InitContainers: []corev1.Container{
-				corev1.Container{
-					Name:  "add-hook",
-					Image: dbImage(cr),
-					Command: []string{
-						"bash", "-x", "-c", `
-							if psql -t -c "SELECT 1 FROM hook WHERE url like '` + host + `%';" | grep -q 1; then
-								echo "Hook already installed.";
-							else
-								psql -c "INSERT INTO hook(id, type, url, target, active) VALUES(nextval('hook_id_seq'), 'new/run', '"'` + hookURL + `'"', -1, true);"
-							fi
-						`,
-					},
-					Env: databaseAccessEnvVars(cr),
-				},
-			},
 			Containers: []corev1.Container{
 				corev1.Container{
 					Name:            "report",
@@ -56,18 +30,6 @@ func reportPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							ContainerPort: 8080,
 						},
 					},
-					VolumeMounts: []corev1.VolumeMount{
-						corev1.VolumeMount{
-							Name:      "reports",
-							MountPath: "/var/www/localhost/htdocs",
-						},
-					},
-				},
-			},
-			Volumes: []corev1.Volume{
-				corev1.Volume{
-					Name:         "reports",
-					VolumeSource: reportsVolumeSource,
 				},
 			},
 		},

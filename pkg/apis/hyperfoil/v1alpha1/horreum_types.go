@@ -63,8 +63,6 @@ type ReportSpec struct {
 	Image string `json:"image,omitempty"`
 	// Route for external access.
 	Route RouteSpec `json:"route,omitempty"`
-	// Name of PVC where the reports will be stored. If empty, ephemeral storage will be used.
-	PersistentVolumeClaim string `json:"persistentVolumeClaim,omitempty"`
 }
 
 // HorreumSpec defines the desired state of Horreum
