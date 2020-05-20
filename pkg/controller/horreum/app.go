@@ -61,6 +61,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 								echo "Database structure seems in place."
 							else
 								psql -f /etc/horreum/imports/structure.sql
+								psql -f /etc/horreum/imports/auxiliary.sql
 								psql -c "INSERT INTO dbsecret (passphrase) VALUES ('$(APP_DB_SECRET)');"
 								psql -f /etc/horreum/imports/policies.sql
 							fi
