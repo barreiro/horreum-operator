@@ -107,13 +107,13 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						},
 						secretEnv("QUARKUS_DATASOURCE_MIGRATION_USERNAME", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
 						secretEnv("QUARKUS_DATASOURCE_MIGRATION_PASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
-						secretEnv("REPO_DB_SECRET", appUserSecret(cr), "dbsecret"),
+						secretEnv("HORREUM_DB_SECRET", appUserSecret(cr), "dbsecret"),
 						corev1.EnvVar{
 							Name:  "QUARKUS_OIDC_AUTH_SERVER_URL",
 							Value: keycloakURL + "/auth/realms/horreum",
 						},
 						corev1.EnvVar{
-							Name:  "REPO_KEYCLOAK_URL",
+							Name:  "HORREUM_KEYCLOAK_URL",
 							Value: url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io") + "/auth",
 						},
 					},
