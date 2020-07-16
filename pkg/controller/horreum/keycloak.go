@@ -29,7 +29,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			Name:    "init-db",
 			Image:   dbImage(cr),
 			Command: []string{"bash", "-x", "-c", script},
-			Env: append(databaseAccessEnvVars(cr),
+			Env: append(databaseAccessEnvVars(cr, &cr.Spec.Keycloak.Database),
 				secretEnv("KEYCLOAK_USER", keycloakDbSecret(cr), corev1.BasicAuthUsernameKey),
 				secretEnv("KEYCLOAK_PASSWORD", keycloakDbSecret(cr), corev1.BasicAuthPasswordKey),
 			),

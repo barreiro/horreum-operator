@@ -57,14 +57,6 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 					Command: []string{
 						"bash", "-x", "-c", `
 							psql -c "SELECT 1;" || exit 1 # fail if connection does not work
-							if psql -t -c "SELECT 1 FROM pg_tables WHERE tablename = 'dbsecret'" | grep -q 1; then
-								echo "Database structure seems in place."
-							else
-								psql -f /etc/horreum/imports/structure.sql
-								psql -f /etc/horreum/imports/auxiliary.sql
-								psql -c "INSERT INTO dbsecret (passphrase) VALUES ('$(APP_DB_SECRET)');"
-								psql -f /etc/horreum/imports/policies.sql
-							fi
 							if psql -t -c "SELECT 1 FROM pg_roles WHERE rolname = '$(APP_USER)';" | grep -q 1; then
 								echo "Database role $(APP_USER) already exists.";
 							else
@@ -79,7 +71,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							fi
 						`,
 					},
-					Env: append(databaseAccessEnvVars(cr),
+					Env: append(databaseAccessEnvVars(cr, &cr.Spec.Database),
 						secretEnv("APP_USER", appUserSecret(cr), corev1.BasicAuthUsernameKey),
 						secretEnv("APP_PASSWORD", appUserSecret(cr), corev1.BasicAuthPasswordKey),
 						secretEnv("APP_DB_SECRET", appUserSecret(cr), "dbsecret"),
@@ -109,6 +101,12 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						},
 						secretEnv("QUARKUS_DATASOURCE_USERNAME", appUserSecret(cr), corev1.BasicAuthUsernameKey),
 						secretEnv("QUARKUS_DATASOURCE_PASSWORD", appUserSecret(cr), corev1.BasicAuthPasswordKey),
+						corev1.EnvVar{
+							Name:  "QUARKUS_DATASOURCE_MIGRATION_URL",
+							Value: dbURL(cr, &cr.Spec.Database, "horreum"),
+						},
+						secretEnv("QUARKUS_DATASOURCE_MIGRATION_USERNAME", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
+						secretEnv("QUARKUS_DATASOURCE_MIGRATION_PASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
 						secretEnv("REPO_DB_SECRET", appUserSecret(cr), "dbsecret"),
 						corev1.EnvVar{
 							Name:  "QUARKUS_OIDC_AUTH_SERVER_URL",

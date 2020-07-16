@@ -46,15 +46,15 @@ func appImage(cr *hyperfoilv1alpha1.Horreum) string {
 	return withDefault(cr.Spec.Image, "quay.io/hyperfoil/horreum:latest")
 }
 
-func databaseAccessEnvVars(cr *hyperfoilv1alpha1.Horreum) []corev1.EnvVar {
+func databaseAccessEnvVars(cr *hyperfoilv1alpha1.Horreum, db *hyperfoilv1alpha1.DatabaseSpec) []corev1.EnvVar {
 	return []corev1.EnvVar{
 		corev1.EnvVar{
 			Name:  "PGHOST",
-			Value: withDefault(cr.Spec.Keycloak.Database.Host, dbDefaultHost(cr)),
+			Value: withDefault(db.Host, dbDefaultHost(cr)),
 		},
 		corev1.EnvVar{
 			Name:  "PGPORT",
-			Value: withDefaultInt(cr.Spec.Keycloak.Database.Port, dbDefaultPort(cr)),
+			Value: withDefaultInt(db.Port, dbDefaultPort(cr)),
 		},
 		corev1.EnvVar{
 			Name:  "PGDATABASE",
