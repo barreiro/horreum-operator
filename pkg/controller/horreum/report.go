@@ -20,12 +20,12 @@ func reportPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
-				corev1.Container{
+				{
 					Name:            "report",
 					Image:           withDefault(cr.Spec.Report.Image, "quay.io/hyperfoil/hyperfoil-report:latest"),
 					ImagePullPolicy: corev1.PullAlways,
 					Ports: []corev1.ContainerPort{
-						corev1.ContainerPort{
+						{
 							Name:          "http",
 							ContainerPort: 8080,
 						},
@@ -45,7 +45,7 @@ func reportService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
-				corev1.ServicePort{
+				{
 					Name: "http",
 					Port: int32(80),
 					TargetPort: intstr.IntOrString{

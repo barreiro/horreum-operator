@@ -37,7 +37,7 @@ func postgresPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 					Name:  "postgres",
 					Image: dbImage(cr),
 					Env: []corev1.EnvVar{
-						corev1.EnvVar{
+						{
 							Name:  "POSTGRES_DB",
 							Value: withDefault(cr.Spec.Database.Name, "horreum"),
 						},
@@ -45,7 +45,7 @@ func postgresPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						secretEnv("POSTGRES_PASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
 					},
 					Ports: []corev1.ContainerPort{
-						corev1.ContainerPort{
+						{
 							Name:          "postgres",
 							ContainerPort: 5432,
 						},
@@ -55,7 +55,7 @@ func postgresPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						RunAsUser: &[]int64{999}[0],
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						corev1.VolumeMount{
+						{
 							Name:      "db-volume",
 							MountPath: "/var/lib/postgresql/data",
 						},
@@ -63,7 +63,7 @@ func postgresPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 				},
 			},
 			Volumes: []corev1.Volume{
-				corev1.Volume{
+				{
 					Name:         "db-volume",
 					VolumeSource: dbVolumeSrc,
 				},
@@ -81,7 +81,7 @@ func postgresService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
-				corev1.ServicePort{
+				{
 					Name: "postgres",
 					Port: int32(5432),
 					TargetPort: intstr.IntOrString{

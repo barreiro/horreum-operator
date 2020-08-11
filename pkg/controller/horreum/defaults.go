@@ -48,15 +48,15 @@ func appImage(cr *hyperfoilv1alpha1.Horreum) string {
 
 func databaseAccessEnvVars(cr *hyperfoilv1alpha1.Horreum, db *hyperfoilv1alpha1.DatabaseSpec) []corev1.EnvVar {
 	return []corev1.EnvVar{
-		corev1.EnvVar{
+		{
 			Name:  "PGHOST",
 			Value: withDefault(db.Host, dbDefaultHost(cr)),
 		},
-		corev1.EnvVar{
+		{
 			Name:  "PGPORT",
 			Value: withDefaultInt(db.Port, dbDefaultPort(cr)),
 		},
-		corev1.EnvVar{
+		{
 			Name:  "PGDATABASE",
 			Value: withDefault(cr.Spec.Database.Name, "horreum"),
 		},

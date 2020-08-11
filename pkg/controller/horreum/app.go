@@ -25,7 +25,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 		Spec: corev1.PodSpec{
 			TerminationGracePeriodSeconds: &[]int64{0}[0],
 			InitContainers: []corev1.Container{
-				corev1.Container{
+				{
 					Name:            "set-imports",
 					Image:           appImage(cr),
 					ImagePullPolicy: corev1.PullAlways,
@@ -45,13 +45,13 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						secretEnv("KEYCLOAK_PASSWORD", keycloakAdminSecret(cr), corev1.BasicAuthPasswordKey),
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						corev1.VolumeMount{
+						{
 							Name:      "imports",
 							MountPath: "/etc/horreum/imports",
 						},
 					},
 				},
-				corev1.Container{
+				{
 					Name:  "init-db",
 					Image: dbImage(cr),
 					Command: []string{
@@ -77,7 +77,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						secretEnv("APP_DB_SECRET", appUserSecret(cr), "dbsecret"),
 					),
 					VolumeMounts: []corev1.VolumeMount{
-						corev1.VolumeMount{
+						{
 							Name:      "imports",
 							MountPath: "/etc/horreum/imports",
 						},
@@ -95,30 +95,30 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						`,
 					},
 					Env: []corev1.EnvVar{
-						corev1.EnvVar{
+						{
 							Name:  "QUARKUS_DATASOURCE_URL",
 							Value: dbURL(cr, &cr.Spec.Database, "horreum"),
 						},
 						secretEnv("QUARKUS_DATASOURCE_USERNAME", appUserSecret(cr), corev1.BasicAuthUsernameKey),
 						secretEnv("QUARKUS_DATASOURCE_PASSWORD", appUserSecret(cr), corev1.BasicAuthPasswordKey),
-						corev1.EnvVar{
+						{
 							Name:  "QUARKUS_DATASOURCE_MIGRATION_URL",
 							Value: dbURL(cr, &cr.Spec.Database, "horreum"),
 						},
 						secretEnv("QUARKUS_DATASOURCE_MIGRATION_USERNAME", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
 						secretEnv("QUARKUS_DATASOURCE_MIGRATION_PASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
 						secretEnv("HORREUM_DB_SECRET", appUserSecret(cr), "dbsecret"),
-						corev1.EnvVar{
+						{
 							Name:  "QUARKUS_OIDC_AUTH_SERVER_URL",
 							Value: keycloakURL + "/auth/realms/horreum",
 						},
-						corev1.EnvVar{
+						{
 							Name:  "HORREUM_KEYCLOAK_URL",
 							Value: url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io") + "/auth",
 						},
 					},
 					VolumeMounts: []corev1.VolumeMount{
-						corev1.VolumeMount{
+						{
 							Name:      "imports",
 							MountPath: "/etc/horreum/imports",
 						},
@@ -126,7 +126,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 				},
 			},
 			Volumes: []corev1.Volume{
-				corev1.Volume{
+				{
 					Name: "imports",
 					VolumeSource: corev1.VolumeSource{
 						EmptyDir: &corev1.EmptyDirVolumeSource{},
@@ -146,7 +146,7 @@ func appService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
-				corev1.ServicePort{
+				{
 					Name: "http",
 					Port: int32(80),
 					TargetPort: intstr.IntOrString{

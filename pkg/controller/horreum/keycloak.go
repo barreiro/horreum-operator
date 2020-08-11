@@ -46,21 +46,21 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 				`/deployments/imports/keycloak-horreum.json > /etc/keycloak/imports/keycloak-horreum.json`,
 		},
 		Env: []corev1.EnvVar{
-			corev1.EnvVar{
+			{
 				Name: "APP_URL",
 				// TODO: this won't work without route set
 				Value: url(cr.Spec.Route, "must-set-route.io"),
 			},
 		},
 		VolumeMounts: []corev1.VolumeMount{
-			corev1.VolumeMount{
+			{
 				Name:      "imports",
 				MountPath: "/etc/keycloak/imports",
 			},
 		},
 	})
 	volumes := []corev1.Volume{
-		corev1.Volume{
+		{
 			Name: "imports",
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
@@ -68,7 +68,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 		},
 	}
 	volumeMounts := []corev1.VolumeMount{
-		corev1.VolumeMount{
+		{
 			Name:      "imports",
 			MountPath: "/etc/keycloak/imports",
 		},
@@ -100,7 +100,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 		Spec: corev1.PodSpec{
 			InitContainers: initContainers,
 			Containers: []corev1.Container{
-				corev1.Container{
+				{
 					Name:  "keycloak",
 					Image: withDefault(cr.Spec.Keycloak.Image, "docker.io/jboss/keycloak:latest"),
 					Args: []string{
@@ -113,19 +113,19 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 					Env: []corev1.EnvVar{
 						secretEnv("KEYCLOAK_USER", keycloakAdminSecret(cr), corev1.BasicAuthUsernameKey),
 						secretEnv("KEYCLOAK_PASSWORD", keycloakAdminSecret(cr), corev1.BasicAuthPasswordKey),
-						corev1.EnvVar{
+						{
 							Name:  "DB_VENDOR",
 							Value: "postgres",
 						},
-						corev1.EnvVar{
+						{
 							Name:  "DB_ADDR",
 							Value: withDefault(cr.Spec.Keycloak.Database.Host, dbDefaultHost(cr)),
 						},
-						corev1.EnvVar{
+						{
 							Name:  "DB_PORT",
 							Value: withDefaultInt(cr.Spec.Keycloak.Database.Port, dbDefaultPort(cr)),
 						},
-						corev1.EnvVar{
+						{
 							Name:  "DB_DATABASE",
 							Value: withDefault(cr.Spec.Keycloak.Database.Name, "keycloak"),
 						},
@@ -133,7 +133,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						secretEnv("DB_PASSWORD", keycloakDbSecret(cr), corev1.BasicAuthPasswordKey),
 					},
 					Ports: []corev1.ContainerPort{
-						corev1.ContainerPort{
+						{
 							Name:          "http",
 							ContainerPort: 8080,
 						},
@@ -155,7 +155,7 @@ func keycloakService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
-				corev1.ServicePort{
+				{
 					Name: "http",
 					Port: int32(80),
 					TargetPort: intstr.IntOrString{
@@ -181,7 +181,7 @@ func keycloakServiceSecure(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
-				corev1.ServicePort{
+				{
 					Name: "https",
 					Port: int32(443),
 					TargetPort: intstr.IntOrString{
