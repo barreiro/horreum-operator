@@ -65,6 +65,23 @@ type ReportSpec struct {
 	Route RouteSpec `json:"route,omitempty"`
 }
 
+// GrafanaSpec defines Grafana setup
+type GrafanaSpec struct {
+	// Hostname of the external Grafana. If empty, an instance of Grafana will be deployed
+	ExternalHost string `json:"externalHost,omitempty"`
+	// Port of the external Grafana. Defaults to 3000.
+	ExternalPort string `json:"externalPort,omitempty"`
+	// Secret used for admin access to Grafana. Created if it does not exist.
+	// Must contain keys `username` and `password`.
+	AdminSecret string `json:"adminSecret,omitempty"`
+	// Custom Grafana image. Defaults to docker.io/grafana/grafana:latest
+	Image string `json:"image,omitempty"`
+	// Default theme that should be used - one of `dark` or `light`. Defaults to `light`.
+	Theme string `json:"theme,omitempty"`
+	// Route for external access.
+	Route RouteSpec `json:"route,omitempty"`
+}
+
 // HorreumSpec defines the desired state of Horreum
 type HorreumSpec struct {
 	// Route for external access
@@ -80,6 +97,8 @@ type HorreumSpec struct {
 	Postgres PostgresSpec `json:"postgres,omitempty"`
 	// Hyperfoil report tool specification
 	Report ReportSpec `json:"report,omitempty"`
+	// Grafana specification
+	Grafana GrafanaSpec `json:"grafana,omitempty"`
 }
 
 // HorreumStatus defines the observed state of Horreum
@@ -97,6 +116,13 @@ type HorreumStatus struct {
 // Horreum is the object configuring Horreum performance results repository
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=horreums,scope=Namespaced
+// +kubebuilder:categories=all,hyperfoil
+// +kubebuilder:resource:shortName=hrm
+// +kubebuilder:printcolumn:name="Route",type="string",JSONPath=".spec.route",description="Horreum route"
+// +kubebuilder:printcolumn:name="Keycloak Route",type="string",JSONPath=".spec.keycloak.route",description="Keycloak route"
+// +kubebuilder:printcolumn:name="Hyperfoil Report Route",type="string",JSONPath=".spec.report.route",description="Hyperfoil Report route"
+// +kubebuilder:printcolumn:name="Grafana Route",type="string",JSONPath=".spec.grafana.route",description="Grafana route"
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.status",description="Overall status"
 type Horreum struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

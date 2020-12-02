@@ -9,9 +9,10 @@ import (
 )
 
 func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
-	keycloakURL := "http://" + cr.Name + "-keycloak." + cr.Namespace + ".svc"
-	if cr.Spec.Keycloak.External {
-		keycloakURL = url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io")
+	keycloakURL := keycloakURL(cr)
+	grafanaURL := "http://" + cr.Name + "-keycloak." + cr.Namespace + ".svc"
+	if cr.Spec.Grafana.ExternalHost != "" {
+		grafanaURL = "http://" + cr.Spec.Grafana.ExternalHost + ":" + cr.Spec.Grafana.ExternalPort
 	}
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -38,11 +39,18 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							export CLIENTSECRET=$$(curl -s $KC_URL/auth/admin/realms/horreum/clients/$CLIENTID/client-secret -X POST -H 'Authorization: Bearer '$TOKEN | jq -r '.value')
 							[ -n "$CLIENTSECRET" ] || exit 1;
 							echo $CLIENTSECRET > /etc/horreum/imports/clientsecret
+							GRAFANA_ADMIN_URL=$GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD@` + grafanaURL + `
+							while ! curl -s $GRAFANA_ADMIN_URL/api/datasources -H 'content-type: application/json' -d '{"name":"Horreum","type":"simpod-json-datasource","access":"proxy","url":"http://` + cr.Name + "." + cr.Namespace + `.svc/api/grafana","basicAuth":false,"withCredentials":false,"isDefault":true,"jsonData":{"oauthPassThru":true},"readOnly":false}'; do sleep 5; done;
+							GRAFANA_API_KEY=$$(curl -s $GRAFANA_ADMIN_URL/api/auth/keys -H 'content-type: application/json' -d '{"name":"Horreum","role":"Editor"}' | jq -r .key)
+							[ -n "$GRAFANA_API_KEY" -a "$GRAFANA_API_KEY" != "null" ] || exit 1
+							echo $GRAFANA_API_KEY >> /etc/horreum/imports/grafana_api_key
 						`,
 					},
 					Env: []corev1.EnvVar{
 						secretEnv("KEYCLOAK_USER", keycloakAdminSecret(cr), corev1.BasicAuthUsernameKey),
 						secretEnv("KEYCLOAK_PASSWORD", keycloakAdminSecret(cr), corev1.BasicAuthPasswordKey),
+						secretEnv("GRAFANA_ADMIN_USER", grafanaAdminSecret(cr), corev1.BasicAuthUsernameKey),
+						secretEnv("GRAFANA_ADMIN_PASSWORD", grafanaAdminSecret(cr), corev1.BasicAuthPasswordKey),
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{
@@ -91,6 +99,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 					Command: []string{
 						"sh", "-c", `
 							export QUARKUS_OIDC_CREDENTIALS_SECRET=$$(cat /etc/horreum/imports/clientsecret)
+							export HORREUM_GRAFANA_API_KEY=$$(cat /etc/horreum/imports/grafana_api_key)
 							/deployments/run-java.sh
 						`,
 					},

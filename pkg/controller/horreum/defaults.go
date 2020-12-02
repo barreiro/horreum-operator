@@ -38,6 +38,10 @@ func keycloakAdminSecret(cr *hyperfoilv1alpha1.Horreum) string {
 	return withDefault(cr.Spec.Keycloak.AdminSecret, cr.Name+"-keycloak-admin")
 }
 
+func grafanaAdminSecret(cr *hyperfoilv1alpha1.Horreum) string {
+	return withDefault(cr.Spec.Grafana.AdminSecret, cr.Name+"-grafana-admin")
+}
+
 func dbImage(cr *hyperfoilv1alpha1.Horreum) string {
 	return withDefault(cr.Spec.Postgres.Image, "docker.io/postgres:12")
 }
@@ -63,4 +67,11 @@ func databaseAccessEnvVars(cr *hyperfoilv1alpha1.Horreum, db *hyperfoilv1alpha1.
 		secretEnv("PGUSER", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
 		secretEnv("PGPASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
 	}
+}
+
+func keycloakURL(cr *hyperfoilv1alpha1.Horreum) string {
+	if cr.Spec.Keycloak.External {
+		return url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io")
+	}
+	return "http://" + cr.Name + "-keycloak." + cr.Namespace + ".svc"
 }

@@ -3,17 +3,38 @@ kind: CustomResourceDefinition
 metadata:
   name: horreums.hyperfoil.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.route
+    description: Horreum route
+    name: Route
+    type: string
+  - JSONPath: .spec.keycloak.route
+    description: Keycloak route
+    name: Keycloak Route
+    type: string
+  - JSONPath: .spec.report.route
+    description: Hyperfoil Report route
+    name: Hyperfoil Report Route
+    type: string
+  - JSONPath: .spec.grafana.route
+    description: Grafana route
+    name: Grafana Route
+    type: string
+  - JSONPath: .status.status
+    description: Overall status
+    name: Status
+    type: string
   group: hyperfoil.io
   names:
     kind: Horreum
     listKind: HorreumList
     plural: horreums
-    singular: horreum
-    shortNames:
-    - hrm
     categories:
     - all
     - hyperfoil
+    shortNames:
+    - hrm
+    singular: horreum
   scope: Namespaced
   subresources:
     status: {}
@@ -37,9 +58,9 @@ spec:
           description: HorreumSpec defines the desired state of Horreum
           properties:
             database:
-              description: Database coordinates for Horreum data. Besides `username` and
-                `password` the secret must also contain key `dbsecret` that will be
-                used to sign access to the database.
+              description: Database coordinates for Horreum data. Besides `username`
+                and `password` the secret must also contain key `dbsecret` that will
+                be used to sign access to the database.
               properties:
                 host:
                   description: Hostname for the database
@@ -54,6 +75,39 @@ spec:
                 secret:
                   description: Name of secret resource with data `username` and `password`.
                     Created if does not exist.
+                  type: string
+              type: object
+            grafana:
+              description: Grafana specification
+              properties:
+                adminSecret:
+                  description: Secret used for admin access to Grafana. Created if
+                    it does not exist. Must contain keys `username` and `password`.
+                  type: string
+                externalHost:
+                  description: Hostname of the external Grafana. If empty, an instance
+                    of Grafana will be deployed
+                  type: string
+                externalPort:
+                  description: Port of the external Grafana. Defaults to 3000.
+                  type: string
+                image:
+                  description: Custom Grafana image. Defaults to docker.io/grafana/grafana:latest
+                  type: string
+                route:
+                  description: Route for external access.
+                  properties:
+                    host:
+                      description: Hostname for external access
+                      type: string
+                    tls:
+                      description: Optional; Name of the secret hosting `tls.crt`,
+                        `tls.key` and optionally `ca.crt`
+                      type: string
+                  type: object
+                theme:
+                  description: Default theme that should be used - one of `dark` or
+                    `light`. Defaults to `light`.
                   type: string
               type: object
             image:
@@ -81,8 +135,8 @@ spec:
                       format: int32
                       type: integer
                     secret:
-                      description: Name of secret resource with data `username` and `password`.
-                        Created if does not exist.
+                      description: Name of secret resource with data `username` and
+                        `password`. Created if does not exist.
                       type: string
                   type: object
                 external:
@@ -94,17 +148,18 @@ spec:
                     Defaults to docker.io/jboss/keycloak:latest
                   type: string
                 route:
-                  description: Route to be used for external access to the Keycloak
-                    instance. When `external` is set to true, this will be used for
-                    internal access as well.
-                  type: object
+                  description: Route for external access to the Keycloak instance.
+                    When `external` is set to true, this will be used for internal
+                    access as well.
                   properties:
                     host:
-                      description: Hostname for external access.
+                      description: Hostname for external access
                       type: string
                     tls:
-                      description: Optional; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
+                      description: Optional; Name of the secret hosting `tls.crt`,
+                        `tls.key` and optionally `ca.crt`
                       type: string
+                  type: object
               type: object
             postgres:
               description: PostgreSQL specification
@@ -138,31 +193,29 @@ spec:
                 image:
                   description: Image of the report tool. Defaults to quay.io/hyperfoil/hyperfoil-report:latest
                   type: string
-                persistentVolumeClaim:
-                  description: Name of PVC where the reports will be stored. If empty,
-                    ephemeral storage will be used.
-                  type: string
                 route:
                   description: Route for external access.
-                  type: object
                   properties:
                     host:
-                      description: Hostname for external access.
+                      description: Hostname for external access
                       type: string
                     tls:
-                      description: Optional; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
+                      description: Optional; Name of the secret hosting `tls.crt`,
+                        `tls.key` and optionally `ca.crt`
                       type: string
+                  type: object
               type: object
             route:
-              description: Route for external access.
-              type: object
+              description: Route for external access
               properties:
                 host:
-                  description: Hostname for external access.
+                  description: Hostname for external access
                   type: string
                 tls:
-                  description: Optional; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
+                  description: Optional; Name of the secret hosting `tls.crt`, `tls.key`
+                    and optionally `ca.crt`
                   type: string
+              type: object
           type: object
         status:
           description: HorreumStatus defines the observed state of Horreum
@@ -180,19 +233,6 @@ spec:
           type: object
       type: object
   version: v1alpha1
-  additionalPrinterColumns:
-  - JSONPath: .spec.route
-    name: Route
-    type: string
-  - JSONPath: .spec.keycloak.route
-    name: Keycloak Route
-    type: string
-  - JSONPath: .spec.report.route
-    name: Hyperfoil Report Route
-    type: string
-  - JSONPath: .status.status
-    name: Status
-    type: string
   versions:
   - name: v1alpha1
     served: true

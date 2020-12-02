@@ -151,6 +151,11 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 		checkSecret(corev1.BasicAuthUsernameKey, corev1.BasicAuthPasswordKey)); err != nil {
 		return reconcile.Result{}, err
 	}
+	grafanaAdminSecret := newSecret(instance, grafanaAdminSecret(instance))
+	if err := ensureSame(r, instance, logger, grafanaAdminSecret, &corev1.Secret{}, nocompare,
+		checkSecret(corev1.BasicAuthUsernameKey, corev1.BasicAuthPasswordKey)); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	postgresPod := postgresPod(instance)
 	postgresService := postgresService(instance)
@@ -234,6 +239,22 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 		if err := ensureSame(r, instance, logger, reportRoute, &routev1.Route{}, compareRoute, checkRoute); err != nil {
 			return reconcile.Result{}, err
 		}
+	}
+
+	grafanaPod := grafanaPod(instance)
+	if err := ensureSame(r, instance, logger, grafanaPod, &corev1.Pod{}, comparePods, checkPod); err != nil {
+		return reconcile.Result{}, err
+	}
+	grafanaService := grafanaService(instance)
+	if err := ensureSame(r, instance, logger, grafanaService, &corev1.Service{}, compareService, nocheck); err != nil {
+		return reconcile.Result{}, err
+	}
+	grafanaRoute, err := grafanaRoute(instance, r)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if err := ensureSame(r, instance, logger, grafanaRoute, &routev1.Route{}, compareRoute, checkRoute); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	uploadConfig := uploadConfig(instance)
