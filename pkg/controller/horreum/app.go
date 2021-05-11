@@ -10,9 +10,9 @@ import (
 
 func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 	keycloakURL := keycloakURL(cr)
-	grafanaURL := "http://" + cr.Name + "-keycloak." + cr.Namespace + ".svc"
+	grafanaHost := cr.Name + "-grafana." + cr.Namespace + ".svc"
 	if cr.Spec.Grafana.ExternalHost != "" {
-		grafanaURL = "http://" + cr.Spec.Grafana.ExternalHost + ":" + cr.Spec.Grafana.ExternalPort
+		grafanaHost = cr.Spec.Grafana.ExternalHost + ":" + cr.Spec.Grafana.ExternalPort
 	}
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -39,8 +39,10 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							export CLIENTSECRET=$$(curl -s $KC_URL/auth/admin/realms/horreum/clients/$CLIENTID/client-secret -X POST -H 'Authorization: Bearer '$TOKEN | jq -r '.value')
 							[ -n "$CLIENTSECRET" ] || exit 1;
 							echo $CLIENTSECRET > /etc/horreum/imports/clientsecret
-							GRAFANA_ADMIN_URL=$GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD@` + grafanaURL + `
+							GRAFANA_ADMIN_URL=http://$GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD@` + grafanaHost + `
+							for DATASOURCE_ID in $(curl $GRAFANA_ADMIN_URL/api/datasources | jq .[].id); do curl -s -X DELETE $GRAFANA_ADMIN_URL/api/datasources/$DATASOURCE_ID; done;
 							while ! curl -s $GRAFANA_ADMIN_URL/api/datasources -H 'content-type: application/json' -d '{"name":"Horreum","type":"simpod-json-datasource","access":"proxy","url":"http://` + cr.Name + "." + cr.Namespace + `.svc/api/grafana","basicAuth":false,"withCredentials":false,"isDefault":true,"jsonData":{"oauthPassThru":true},"readOnly":false}'; do sleep 5; done;
+							for KEY_ID in $(curl -s $GRAFANA_ADMIN_URL/api/auth/keys | jq .[].id); do curl -s $GRAFANA_ADMIN_URL/api/auth/keys/$KEY_ID -X DELETE; done
 							GRAFANA_API_KEY=$$(curl -s $GRAFANA_ADMIN_URL/api/auth/keys -H 'content-type: application/json' -d '{"name":"Horreum","role":"Editor"}' | jq -r .key)
 							[ -n "$GRAFANA_API_KEY" -a "$GRAFANA_API_KEY" != "null" ] || exit 1
 							echo $GRAFANA_API_KEY >> /etc/horreum/imports/grafana_api_key
@@ -100,18 +102,18 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						"sh", "-c", `
 							export QUARKUS_OIDC_CREDENTIALS_SECRET=$$(cat /etc/horreum/imports/clientsecret)
 							export HORREUM_GRAFANA_API_KEY=$$(cat /etc/horreum/imports/grafana_api_key)
-							/deployments/run-java.sh
+							/deployments/horreum.sh
 						`,
 					},
 					Env: []corev1.EnvVar{
 						{
-							Name:  "QUARKUS_DATASOURCE_URL",
+							Name:  "QUARKUS_DATASOURCE_JDBC_URL",
 							Value: dbURL(cr, &cr.Spec.Database, "horreum"),
 						},
 						secretEnv("QUARKUS_DATASOURCE_USERNAME", appUserSecret(cr), corev1.BasicAuthUsernameKey),
 						secretEnv("QUARKUS_DATASOURCE_PASSWORD", appUserSecret(cr), corev1.BasicAuthPasswordKey),
 						{
-							Name:  "QUARKUS_DATASOURCE_MIGRATION_URL",
+							Name:  "QUARKUS_DATASOURCE_MIGRATION_JDBC_URL",
 							Value: dbURL(cr, &cr.Spec.Database, "horreum"),
 						},
 						secretEnv("QUARKUS_DATASOURCE_MIGRATION_USERNAME", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
