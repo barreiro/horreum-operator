@@ -102,38 +102,6 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						},
 					},
 				},
-				{
-					Name:  "init-db",
-					Image: dbImage(cr),
-					Command: []string{
-						"bash", "-x", "-c", `
-							psql -c "SELECT 1;" || exit 1 # fail if connection does not work
-							if psql -t -c "SELECT 1 FROM pg_roles WHERE rolname = '$(APP_USER)';" | grep -q 1; then
-								echo "Database role $(APP_USER) already exists.";
-							else
-								psql -c "CREATE ROLE \"$(APP_USER)\" noinherit login password '$(APP_PASSWORD)';"
-							fi
-							if [ $$(psql -t -c "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='$(APP_USER)';") == "0" ]; then
-								psql -c "GRANT select, insert, delete, update ON ALL TABLES IN SCHEMA public TO \"$(APP_USER)\";"
-								psql -c "REVOKE ALL ON dbsecret FROM \"$(APP_USER)\";"
-								psql -c "GRANT ALL ON ALL sequences IN SCHEMA public TO \"$(APP_USER)\";"
-							else
-								echo "Role seems to already have some table grants."
-							fi
-						`,
-					},
-					Env: append(databaseAccessEnvVars(cr, &cr.Spec.Database),
-						secretEnv("APP_USER", appUserSecret(cr), corev1.BasicAuthUsernameKey),
-						secretEnv("APP_PASSWORD", appUserSecret(cr), corev1.BasicAuthPasswordKey),
-						secretEnv("APP_DB_SECRET", appUserSecret(cr), "dbsecret"),
-					),
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      "imports",
-							MountPath: "/etc/horreum/imports",
-						},
-					},
-				},
 			},
 			Containers: []corev1.Container{
 				{

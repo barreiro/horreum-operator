@@ -10,31 +10,6 @@ import (
 
 func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 	initContainers := make([]corev1.Container, 0)
-	if cr.Spec.Postgres.ExternalHost == "" {
-		dbName := withDefault(cr.Spec.Keycloak.Database.Name, "keycloak")
-		script := `
-		    psql -c "SELECT 1;" || exit 1 # fail if connection does not work
-			if psql -t -c "SELECT 1 FROM pg_roles WHERE rolname = '$(KEYCLOAK_USER)';" | grep -q 1; then
-                echo "Database role $(KEYCLOAK_USER) already exists.";
-			else
-				psql -c "CREATE ROLE \"$(KEYCLOAK_USER)\" noinherit login password '$(KEYCLOAK_PASSWORD)';";
-			fi
-			if psql -t -c "SELECT 1 FROM pg_database WHERE datname = '` + dbName + `';" | grep -q 1; then
-			    echo "Database "` + dbName + `" already exists.";
-			else
-				psql -c "CREATE DATABASE ` + dbName + ` WITH OWNER = '$(KEYCLOAK_USER)';";
-			fi
-		`
-		initContainers = append(initContainers, corev1.Container{
-			Name:    "init-db",
-			Image:   dbImage(cr),
-			Command: []string{"bash", "-x", "-c", script},
-			Env: append(databaseAccessEnvVars(cr, &cr.Spec.Keycloak.Database),
-				secretEnv("KEYCLOAK_USER", keycloakDbSecret(cr), corev1.BasicAuthUsernameKey),
-				secretEnv("KEYCLOAK_PASSWORD", keycloakDbSecret(cr), corev1.BasicAuthPasswordKey),
-			),
-		})
-	}
 	initContainers = append(initContainers, corev1.Container{
 		Name:            "copy-imports",
 		Image:           appImage(cr),

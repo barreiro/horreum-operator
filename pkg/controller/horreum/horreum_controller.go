@@ -157,6 +157,7 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	postgresConfigMap := postgresConfigMap(instance)
 	postgresPod := postgresPod(instance)
 	postgresService := postgresService(instance)
 	if instance.Spec.Postgres.ExternalHost != "" {
@@ -167,6 +168,9 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 			return reconcile.Result{}, err
 		}
 	} else {
+		if err := ensureSame(r, instance, logger, postgresConfigMap, &corev1.ConfigMap{}, compareConfigMap, nocheck); err != nil {
+			return reconcile.Result{}, err
+		}
 		if err := ensureSame(r, instance, logger, postgresPod, &corev1.Pod{}, comparePods, checkPod); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -522,4 +526,24 @@ func checkRoute(i interface{}) (bool, string, string) {
 		}
 	}
 	return false, "Pending", " is in unknown state"
+}
+
+func compareConfigMap(i1, i2 interface{}, logger logr.Logger) bool {
+	cm1, ok1 := i1.(*corev1.ConfigMap)
+	cm2, ok2 := i2.(*corev1.ConfigMap)
+	if !ok1 || !ok2 {
+		logger.Info("Cannot cast to ConfigMaps: " + fmt.Sprintf("%v | %v", i1, i2))
+		return false
+	}
+	if len(cm1.Data) != len(cm2.Data) {
+		logger.Info("Different sizes: " + fmt.Sprintf("%d | %d", len(cm1.Data), len(cm2.Data)))
+		return false
+	}
+	for key, val1 := range cm1.Data {
+		if val2, ok := cm2.Data[key]; !ok || val1 != val2 {
+			logger.Info("Key " + key + " differs: " + val1 + " | " + val2)
+			return false
+		}
+	}
+	return true
 }
