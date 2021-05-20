@@ -40,16 +40,24 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 		Image:           appImage(cr),
 		ImagePullPolicy: corev1.PullAlways,
 		Command: []string{
-			"sh", "-x", "-c", `jq -r '.clients |= map(if .clientId | startswith("horreum") then ` +
+			"sh", "-x", "-c", `cat /deployments/imports/keycloak-horreum.json ` +
+				`| jq -r '.clients |= map(if .clientId | startswith("horreum") then ` +
 				`(.rootUrl = "$(APP_URL)/") | (.adminUrl = "$(APP_URL)") | ` +
 				`(.webOrigins = [ "$(APP_URL)" ]) | (.redirectUris = [ "$(APP_URL)/*"]) else . end)' ` +
-				`/deployments/imports/keycloak-horreum.json > /etc/keycloak/imports/keycloak-horreum.json`,
+				`| jq -r '.clients |= map(if .clientId | startswith("grafana") then ` +
+				`(.rootUrl = "$(GRAFANA_URL)/") | (.adminUrl = "$(GRAFANA_URL)") | ` +
+				`(.webOrigins = [ "$(GRAFANA_URL)" ]) | (.redirectUris = [ "$(GRAFANA_URL)/*"]) else . end)' ` +
+				`> /etc/keycloak/imports/keycloak-horreum.json`,
 		},
 		Env: []corev1.EnvVar{
 			{
 				Name: "APP_URL",
 				// TODO: this won't work without route set
 				Value: url(cr.Spec.Route, "must-set-route.io"),
+			},
+			{
+				Name:  "GRAFANA_URL",
+				Value: url(cr.Spec.Grafana.Route, "must-set-route.io"),
 			},
 		},
 		VolumeMounts: []corev1.VolumeMount{

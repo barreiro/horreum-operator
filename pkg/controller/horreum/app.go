@@ -14,6 +14,54 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 	if cr.Spec.Grafana.ExternalHost != "" {
 		grafanaHost = cr.Spec.Grafana.ExternalHost + ":" + cr.Spec.Grafana.ExternalPort
 	}
+	horreumEnv := []corev1.EnvVar{
+		{
+			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
+			Value: dbURL(cr, &cr.Spec.Database, "horreum"),
+		},
+		secretEnv("QUARKUS_DATASOURCE_USERNAME", appUserSecret(cr), corev1.BasicAuthUsernameKey),
+		secretEnv("QUARKUS_DATASOURCE_PASSWORD", appUserSecret(cr), corev1.BasicAuthPasswordKey),
+		{
+			Name:  "QUARKUS_DATASOURCE_MIGRATION_JDBC_URL",
+			Value: dbURL(cr, &cr.Spec.Database, "horreum"),
+		},
+		secretEnv("QUARKUS_DATASOURCE_MIGRATION_USERNAME", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
+		secretEnv("QUARKUS_DATASOURCE_MIGRATION_PASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
+		secretEnv("HORREUM_DB_SECRET", appUserSecret(cr), "dbsecret"),
+		{
+			Name:  "QUARKUS_OIDC_AUTH_SERVER_URL",
+			Value: keycloakURL + "/auth/realms/horreum",
+		},
+		{
+			Name:  "QUARKUS_OIDC_TOKEN_ISSUER",
+			Value: url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io") + "/auth/realms/horreum",
+		},
+		{
+			Name:  "HORREUM_INTERNAL_URL",
+			Value: "http://" + cr.Name + "." + cr.Namespace + ".svc",
+		},
+		{
+			Name:  "HORREUM_KEYCLOAK_URL",
+			Value: url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io") + "/auth",
+		},
+		{
+			Name:  "HORREUM_GRAFANA_URL",
+			Value: url(cr.Spec.Grafana.Route, "must-set-grafana-route.io"),
+		},
+		{
+			Name:  "HORREUM_GRAFANA_MP_REST_URL",
+			Value: "http://" + grafanaHost,
+		},
+		// This is needed because Grafana doesn't support API keys for user management
+		secretEnv("HORREUM_GRAFANA_ADMIN_USER", grafanaAdminSecret(cr), corev1.BasicAuthUsernameKey),
+		secretEnv("HORREUM_GRAFANA_ADMIN_PASSWORD", grafanaAdminSecret(cr), corev1.BasicAuthPasswordKey),
+	}
+	if javaOptions, ok := cr.ObjectMeta.Annotations["java-options"]; ok {
+		horreumEnv = append(horreumEnv, corev1.EnvVar{
+			Name:  "JAVA_OPTIONS",
+			Value: javaOptions,
+		})
+	}
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-app",
@@ -39,13 +87,6 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							export CLIENTSECRET=$$(curl -s $KC_URL/auth/admin/realms/horreum/clients/$CLIENTID/client-secret -X POST -H 'Authorization: Bearer '$TOKEN | jq -r '.value')
 							[ -n "$CLIENTSECRET" ] || exit 1;
 							echo $CLIENTSECRET > /etc/horreum/imports/clientsecret
-							GRAFANA_ADMIN_URL=http://$GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD@` + grafanaHost + `
-							for DATASOURCE_ID in $(curl $GRAFANA_ADMIN_URL/api/datasources | jq .[].id); do curl -s -X DELETE $GRAFANA_ADMIN_URL/api/datasources/$DATASOURCE_ID; done;
-							while ! curl -s $GRAFANA_ADMIN_URL/api/datasources -H 'content-type: application/json' -d '{"name":"Horreum","type":"simpod-json-datasource","access":"proxy","url":"http://` + cr.Name + "." + cr.Namespace + `.svc/api/grafana","basicAuth":false,"withCredentials":false,"isDefault":true,"jsonData":{"oauthPassThru":true},"readOnly":false}'; do sleep 5; done;
-							for KEY_ID in $(curl -s $GRAFANA_ADMIN_URL/api/auth/keys | jq .[].id); do curl -s $GRAFANA_ADMIN_URL/api/auth/keys/$KEY_ID -X DELETE; done
-							GRAFANA_API_KEY=$$(curl -s $GRAFANA_ADMIN_URL/api/auth/keys -H 'content-type: application/json' -d '{"name":"Horreum","role":"Editor"}' | jq -r .key)
-							[ -n "$GRAFANA_API_KEY" -a "$GRAFANA_API_KEY" != "null" ] || exit 1
-							echo $GRAFANA_API_KEY >> /etc/horreum/imports/grafana_api_key
 						`,
 					},
 					Env: []corev1.EnvVar{
@@ -105,29 +146,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							/deployments/horreum.sh
 						`,
 					},
-					Env: []corev1.EnvVar{
-						{
-							Name:  "QUARKUS_DATASOURCE_JDBC_URL",
-							Value: dbURL(cr, &cr.Spec.Database, "horreum"),
-						},
-						secretEnv("QUARKUS_DATASOURCE_USERNAME", appUserSecret(cr), corev1.BasicAuthUsernameKey),
-						secretEnv("QUARKUS_DATASOURCE_PASSWORD", appUserSecret(cr), corev1.BasicAuthPasswordKey),
-						{
-							Name:  "QUARKUS_DATASOURCE_MIGRATION_JDBC_URL",
-							Value: dbURL(cr, &cr.Spec.Database, "horreum"),
-						},
-						secretEnv("QUARKUS_DATASOURCE_MIGRATION_USERNAME", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
-						secretEnv("QUARKUS_DATASOURCE_MIGRATION_PASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
-						secretEnv("HORREUM_DB_SECRET", appUserSecret(cr), "dbsecret"),
-						{
-							Name:  "QUARKUS_OIDC_AUTH_SERVER_URL",
-							Value: keycloakURL + "/auth/realms/horreum",
-						},
-						{
-							Name:  "HORREUM_KEYCLOAK_URL",
-							Value: url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io") + "/auth",
-						},
-					},
+					Env: horreumEnv,
 					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      "imports",
