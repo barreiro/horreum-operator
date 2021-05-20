@@ -28,7 +28,7 @@ type RouteSpec struct {
 type KeycloakSpec struct {
 	// Set to true if the Keycloak instance should not be deployed
 	External bool `json:"external,omitempty"`
-	// Image that should be used for Keycloak deployment. Defaults to docker.io/jboss/keycloak:latest
+	// Image that should be used for Keycloak deployment. Defaults to quay.io/keycloak/keycloak:latest
 	Image string `json:"image,omitempty"`
 	// Route for external access to the Keycloak instance.
 	// When `external` is set to true, this will be used for internal access as well.
@@ -46,7 +46,7 @@ type PostgresSpec struct {
 	ExternalHost string `json:"externalHost,omitempty"`
 	// Port of the external database. Defaults to 5432.
 	ExternalPort int32 `json:"externalPort,omitempty"`
-	// Image used for PostgreSQL deployment. Defaults to docker.io/postgres:12
+	// Image used for PostgreSQL deployment. Defaults to registry.redhat.io/rhel8/postgresql-12:latest
 	Image string `json:"image,omitempty"`
 	// Secret used for unrestricted access to the database. Created if does not exist.
 	// Must contain keys `username` and `password`.
@@ -74,7 +74,7 @@ type GrafanaSpec struct {
 	// Secret used for admin access to Grafana. Created if it does not exist.
 	// Must contain keys `username` and `password`.
 	AdminSecret string `json:"adminSecret,omitempty"`
-	// Custom Grafana image. Defaults to docker.io/grafana/grafana:latest
+	// Custom Grafana image. Defaults to registry.redhat.io/openshift4/ose-grafana:latest
 	Image string `json:"image,omitempty"`
 	// Default theme that should be used - one of `dark` or `light`. Defaults to `light`.
 	Theme string `json:"theme,omitempty"`

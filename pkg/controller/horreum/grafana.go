@@ -51,7 +51,7 @@ func grafanaPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			Containers: []corev1.Container{
 				{
 					Name:  "grafana",
-					Image: withDefault(cr.Spec.Grafana.Image, "docker.io/grafana/grafana:latest"),
+					Image: withDefault(cr.Spec.Grafana.Image, "registry.redhat.io/openshift4/ose-grafana:latest"),
 					Command: []string{
 						"sh", "-c", `
 							export GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=$$(cat /etc/grafana/imports/clientsecret)

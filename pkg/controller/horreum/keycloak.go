@@ -110,7 +110,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			Containers: []corev1.Container{
 				{
 					Name:  "keycloak",
-					Image: withDefault(cr.Spec.Keycloak.Image, "docker.io/jboss/keycloak:latest"),
+					Image: withDefault(cr.Spec.Keycloak.Image, "quay.io/keycloak/keycloak:latest"),
 					Args: []string{
 						"-Dkeycloak.profile.feature.upload_scripts=enabled",
 						"-Dkeycloak.migration.action=import",

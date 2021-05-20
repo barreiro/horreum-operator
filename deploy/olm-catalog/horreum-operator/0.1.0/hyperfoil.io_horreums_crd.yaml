@@ -92,7 +92,7 @@ spec:
                   description: Port of the external Grafana. Defaults to 3000.
                   type: string
                 image:
-                  description: Custom Grafana image. Defaults to docker.io/grafana/grafana:latest
+                  description: Custom Grafana image. Defaults to registry.redhat.io/openshift4/ose-grafana:latest
                   type: string
                 route:
                   description: Route for external access.
@@ -145,7 +145,7 @@ spec:
                   type: boolean
                 image:
                   description: Image that should be used for Keycloak deployment.
-                    Defaults to docker.io/jboss/keycloak:latest
+                    Defaults to quayio/keycloak/keycloak:latest
                   type: string
                 route:
                   description: Route for external access to the Keycloak instance.
@@ -177,7 +177,7 @@ spec:
                   format: int32
                   type: integer
                 image:
-                  description: Image used for PostgreSQL deployment. Defaults to docker.io/postgres:12
+                  description: Image used for PostgreSQL deployment. Defaults to registry.redhat.io/rhel8/postgresql-12:latest
                   type: string
                 persistentVolumeClaim:
                   description: Name of PVC where the database will store the data.

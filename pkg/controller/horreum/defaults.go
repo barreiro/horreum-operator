@@ -43,7 +43,7 @@ func grafanaAdminSecret(cr *hyperfoilv1alpha1.Horreum) string {
 }
 
 func dbImage(cr *hyperfoilv1alpha1.Horreum) string {
-	return withDefault(cr.Spec.Postgres.Image, "docker.io/postgres:12")
+	return withDefault(cr.Spec.Postgres.Image, "registry.redhat.io/rhel8/postgresql-12:latest")
 }
 
 func appImage(cr *hyperfoilv1alpha1.Horreum) string {
