@@ -84,13 +84,15 @@ spec:
                   description: Secret used for admin access to Grafana. Created if
                     it does not exist. Must contain keys `username` and `password`.
                   type: string
-                externalHost:
-                  description: Hostname of the external Grafana. If empty, an instance
-                    of Grafana will be deployed
-                  type: string
-                externalPort:
-                  description: Port of the external Grafana. Defaults to 3000.
-                  type: string
+                external:
+                  description: When this is set Grafana instance will not be deployed and Horreum will use this external instance.
+                  properties:
+                    publicUri:
+                      description: Public facing URI - Horreum will send this URI to the clients.
+                      type: string
+                    internalUri:
+                      description: Internal URI - Horreum will use this for communication but won't disclose that.
+                      type: string
                 image:
                   description: Custom Grafana image. Defaults to registry.redhat.io/openshift4/ose-grafana:latest
                   type: string
@@ -100,9 +102,11 @@ spec:
                     host:
                       description: Hostname for external access
                       type: string
+                    type:
+                      description: Either 'http' (for plain-text routes - not recommended), 'edge', 'reencrypt' or 'passthrough'
+                      type: string
                     tls:
-                      description: Optional; Name of the secret hosting `tls.crt`,
-                        `tls.key` and optionally `ca.crt`
+                      description: Optional for edge and reencrypt routes, required for passthrough; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
                       type: string
                   type: object
                 theme:
@@ -140,9 +144,14 @@ spec:
                       type: string
                   type: object
                 external:
-                  description: Set to true if the Keycloak instance should not be
-                    deployed
-                  type: boolean
+                  description: When this is set Keycloak instance will not be deployed and Horreum will use this external instance.
+                  properties:
+                    publicUri:
+                      description: Public facing URI - Horreum will send this URI to the clients.
+                      type: string
+                    internalUri:
+                      description: Internal URI - Horreum will use this for communication but won't disclose that.
+                      type: string
                 image:
                   description: Image that should be used for Keycloak deployment.
                     Defaults to quayio/keycloak/keycloak:latest
@@ -155,9 +164,11 @@ spec:
                     host:
                       description: Hostname for external access
                       type: string
+                    type:
+                      description: Either 'http' (for plain-text routes - not recommended), 'edge', 'reencrypt' or 'passthrough'
+                      type: string
                     tls:
-                      description: Optional; Name of the secret hosting `tls.crt`,
-                        `tls.key` and optionally `ca.crt`
+                      description: Optional for edge and reencrypt routes, required for passthrough; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
                       type: string
                   type: object
               type: object
@@ -168,14 +179,9 @@ spec:
                   description: Secret used for unrestricted access to the database.
                     Created if does not exist. Must contain keys `username` and `password`.
                   type: string
-                externalHost:
-                  description: Hostname of the external database. If empty, database
-                    will be deployed by this operator.
-                  type: string
-                externalPort:
-                  description: Port of the external database. Defaults to 5432.
-                  format: int32
-                  type: integer
+                enabled:
+                  description: True (or omitted) to deploy PostgreSQL database.
+                  type: boolean
                 image:
                   description: Image used for PostgreSQL deployment. Defaults to registry.redhat.io/rhel8/postgresql-12:latest
                   type: string
@@ -199,9 +205,11 @@ spec:
                     host:
                       description: Hostname for external access
                       type: string
+                    type:
+                      description: Either 'http' (for plain-text routes - not recommended), 'edge', 'reencrypt' or 'passthrough'
+                      type: string
                     tls:
-                      description: Optional; Name of the secret hosting `tls.crt`,
-                        `tls.key` and optionally `ca.crt`
+                      description: Optional for edge and reencrypt routes, required for passthrough; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
                       type: string
                   type: object
               type: object
@@ -211,9 +219,11 @@ spec:
                 host:
                   description: Hostname for external access
                   type: string
+                type:
+                  description: Either 'http' (for plain-text routes - not recommended), 'edge', 'reencrypt' or 'passthrough'
+                  type: string
                 tls:
-                  description: Optional; Name of the secret hosting `tls.crt`, `tls.key`
-                    and optionally `ca.crt`
+                  description: Optional for edge and reencrypt routes, required for passthrough; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
                   type: string
               type: object
           type: object

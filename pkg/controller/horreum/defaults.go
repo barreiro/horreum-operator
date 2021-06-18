@@ -2,24 +2,15 @@ package horreum
 
 import (
 	hyperfoilv1alpha1 "github.com/Hyperfoil/horreum-operator/pkg/apis/hyperfoil/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func dbDefaultHost(cr *hyperfoilv1alpha1.Horreum) string {
-	return withDefault(cr.Spec.Postgres.ExternalHost, cr.Name+"-db."+cr.Namespace+".svc")
-}
-
-func dbDefaultPort(cr *hyperfoilv1alpha1.Horreum) int32 {
-	dbDefaultPort := cr.Spec.Postgres.ExternalPort
-	if dbDefaultPort == 0 {
-		dbDefaultPort = 5432
-	}
-	return dbDefaultPort
+	return cr.Name + "-db." + cr.Namespace + ".svc"
 }
 
 func dbURL(cr *hyperfoilv1alpha1.Horreum, db *hyperfoilv1alpha1.DatabaseSpec, defName string) string {
 	return "jdbc:postgresql://" + withDefault(db.Host, dbDefaultHost(cr)) +
-		":" + withDefaultInt(db.Port, dbDefaultPort(cr)) + "/" + withDefault(db.Name, defName)
+		":" + withDefaultInt(db.Port, 5432) + "/" + withDefault(db.Name, defName)
 }
 
 func dbAdminSecret(cr *hyperfoilv1alpha1.Horreum) string {
@@ -50,28 +41,22 @@ func appImage(cr *hyperfoilv1alpha1.Horreum) string {
 	return withDefault(cr.Spec.Image, "quay.io/hyperfoil/horreum:latest")
 }
 
-func databaseAccessEnvVars(cr *hyperfoilv1alpha1.Horreum, db *hyperfoilv1alpha1.DatabaseSpec) []corev1.EnvVar {
-	return []corev1.EnvVar{
-		{
-			Name:  "PGHOST",
-			Value: withDefault(db.Host, dbDefaultHost(cr)),
-		},
-		{
-			Name:  "PGPORT",
-			Value: withDefaultInt(db.Port, dbDefaultPort(cr)),
-		},
-		{
-			Name:  "PGDATABASE",
-			Value: withDefault(cr.Spec.Database.Name, "horreum"),
-		},
-		secretEnv("PGUSER", dbAdminSecret(cr), corev1.BasicAuthUsernameKey),
-		secretEnv("PGPASSWORD", dbAdminSecret(cr), corev1.BasicAuthPasswordKey),
+func keycloakInternalURL(cr *hyperfoilv1alpha1.Horreum) string {
+	if cr.Spec.Keycloak.External.InternalUri != "" {
+		return cr.Spec.Keycloak.External.InternalUri
 	}
+	if cr.Spec.Keycloak.External.PublicUri != "" {
+		return cr.Spec.Keycloak.External.PublicUri
+	}
+	return innerProtocol(cr.Spec.Keycloak.Route) + cr.Name + "-keycloak." + cr.Namespace + ".svc"
 }
 
-func keycloakURL(cr *hyperfoilv1alpha1.Horreum) string {
-	if cr.Spec.Keycloak.External {
-		return url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io")
+func grafanaInternalURL(cr *hyperfoilv1alpha1.Horreum) string {
+	if cr.Spec.Grafana.External.InternalUri != "" {
+		return cr.Spec.Grafana.External.InternalUri
 	}
-	return "http://" + cr.Name + "-keycloak." + cr.Namespace + ".svc"
+	if cr.Spec.Grafana.External.PublicUri != "" {
+		return cr.Spec.Grafana.External.PublicUri
+	}
+	return innerProtocol(cr.Spec.Grafana.Route) + cr.Name + "-grafana." + cr.Namespace + ".svc"
 }

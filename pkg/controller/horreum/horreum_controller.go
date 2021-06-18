@@ -50,34 +50,40 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource Horreum
-	err = c.Watch(&source.Kind{Type: &hyperfoilv1alpha1.Horreum{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
+	if err = c.Watch(&source.Kind{Type: &hyperfoilv1alpha1.Horreum{}}, &handler.EnqueueRequestForObject{}); err != nil {
 		return err
 	}
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner Horreum
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	if err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &hyperfoilv1alpha1.Horreum{},
-	})
-	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+	}); err != nil {
+		return err
+	}
+	if err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &hyperfoilv1alpha1.Horreum{},
-	})
-	err = c.Watch(&source.Kind{Type: &routev1.Route{}}, &handler.EnqueueRequestForOwner{
+	}); err != nil {
+		return err
+	}
+	if err = c.Watch(&source.Kind{Type: &routev1.Route{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &hyperfoilv1alpha1.Horreum{},
-	})
-	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
+	}); err != nil {
+		return err
+	}
+	if err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &hyperfoilv1alpha1.Horreum{},
-	})
-	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
+	}); err != nil {
+		return err
+	}
+	if err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &hyperfoilv1alpha1.Horreum{},
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
@@ -130,6 +136,19 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 		instance.Status.LastUpdate = metav1.Now()
 	}
 
+	serviceCaConfigMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "service-ca.crt",
+			Namespace: instance.Namespace,
+			Annotations: map[string]string{
+				"service.beta.openshift.io/inject-cabundle": "true",
+			},
+		},
+	}
+	if err := ensureSame(r, instance, logger, serviceCaConfigMap, &corev1.ConfigMap{}, nocompare, nocheck); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	dbAdminSecret := newSecret(instance, dbAdminSecret(instance))
 	if err := ensureSame(r, instance, logger, dbAdminSecret, &corev1.Secret{}, nocompare,
 		checkSecret(corev1.BasicAuthUsernameKey, corev1.BasicAuthPasswordKey)); err != nil {
@@ -160,7 +179,7 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 	postgresConfigMap := postgresConfigMap(instance)
 	postgresPod := postgresPod(instance)
 	postgresService := postgresService(instance)
-	if instance.Spec.Postgres.ExternalHost != "" {
+	if instance.Spec.Postgres.Enabled != nil && !*instance.Spec.Postgres.Enabled {
 		if err := ensureDeleted(r, instance, postgresPod, &corev1.Pod{}); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -181,16 +200,15 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	keycloakPod := keycloakPod(instance)
 	keycloakService := keycloakService(instance)
-	keycloakServiceSecure := keycloakServiceSecure(instance)
-	keycloakRoute := keycloakRoute(instance)
-	if instance.Spec.Keycloak.External {
+	keycloakRoute, err := keycloakRoute(instance, r)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	if instance.Spec.Keycloak.External.PublicUri != "" {
 		if err := ensureDeleted(r, instance, keycloakPod, &corev1.Pod{}); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err := ensureDeleted(r, instance, keycloakService, &corev1.Service{}); err != nil {
-			return reconcile.Result{}, err
-		}
-		if err := ensureDeleted(r, instance, keycloakServiceSecure, &corev1.Service{}); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err := ensureDeleted(r, instance, keycloakRoute, &routev1.Route{}); err != nil {
@@ -201,9 +219,6 @@ func (r *ReconcileHorreum) Reconcile(request reconcile.Request) (reconcile.Resul
 			return reconcile.Result{}, err
 		}
 		if err := ensureSame(r, instance, logger, keycloakService, &corev1.Service{}, compareService, nocheck); err != nil {
-			return reconcile.Result{}, err
-		}
-		if err := ensureSame(r, instance, logger, keycloakServiceSecure, &corev1.Service{}, compareService, nocheck); err != nil {
 			return reconcile.Result{}, err
 		}
 		if err := ensureSame(r, instance, logger, keycloakRoute, &routev1.Route{}, compareRoute, checkRoute); err != nil {
@@ -400,16 +415,43 @@ func compareContainers(c1 *corev1.Container, c2 *corev1.Container, logger logr.L
 		logger.Info("Envs don't match")
 		return false
 	}
-	// TODO compare envs
+	for i, e1 := range c1.Env {
+		e2 := c2.Env[i]
+		if e1.Name != e2.Name {
+			logger.Info("Envs don't match")
+			return false
+		}
+		if e1.Value != e2.Value {
+			logger.Info("Env values for " + e1.Name + " don't match: " + e1.Value + " | " + e2.Value)
+			return false
+		}
+		if e1.ValueFrom != nil || e2.ValueFrom != nil {
+			if e1.ValueFrom == nil || e2.ValueFrom == nil {
+				logger.Info("Env values for " + e1.Name + " don't match: " + fmt.Sprintf("%v | %v", e1.ValueFrom, e2.ValueFrom))
+				return false
+			}
+			if e1.ValueFrom.SecretKeyRef == nil || e2.ValueFrom.SecretKeyRef == nil {
+				logger.Info("Env values for " + e1.Name + " have unexpected content " + fmt.Sprintf("%v | %v", e1.ValueFrom, e2.ValueFrom))
+				return false
+			}
+			if e1.ValueFrom.SecretKeyRef.Name != e2.ValueFrom.SecretKeyRef.Name || e1.ValueFrom.SecretKeyRef.Key != e2.ValueFrom.SecretKeyRef.Key {
+				logger.Info("Env values for " + e1.Name + " don't match: " + fmt.Sprintf("%v | %v", e1.ValueFrom, e2.ValueFrom))
+				return false
+			}
+		}
+	}
+	// c2 has one more volume mount because of the serviceaccount token
+	if len(c1.VolumeMounts)+1 != len(c2.VolumeMounts) {
+		logger.Info("Volume mounts on container " + c1.Name + " don't match")
+		return false
+	}
+
 	return true
 }
 
 func uploadConfig(cr *hyperfoilv1alpha1.Horreum) *corev1.ConfigMap {
-	keycloakURL := `http://` + cr.Name + "-keycloak." + cr.Namespace + `.svc`
-	if cr.Spec.Keycloak.External {
-		keycloakURL = url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io")
-	}
-	horreumURL := `http://` + cr.Name + "." + cr.Namespace + `.svc`
+	keycloakURL := keycloakInternalURL(cr)
+	horreumURL := innerProtocol(cr.Spec.Route) + cr.Name + "." + cr.Namespace + `.svc`
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-hyperfoil-upload",
@@ -471,9 +513,9 @@ func checkPod(i interface{}) (bool, string, string) {
 
 func compareService(i1, i2 interface{}, logger logr.Logger) bool {
 	s1, ok1 := i1.(*corev1.Service)
-	s2, ok2 := i1.(*corev1.Service)
+	s2, ok2 := i2.(*corev1.Service)
 	if !ok1 || !ok2 {
-		logger.Info("Cannot cast to Secrets: " + fmt.Sprintf("%v | %v", i1, i2))
+		logger.Info("Cannot cast to Services: " + fmt.Sprintf("%v | %v", i1, i2))
 		return false
 	}
 	if len(s1.Spec.Ports) != len(s2.Spec.Ports) {

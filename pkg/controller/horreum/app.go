@@ -5,15 +5,10 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
-	keycloakURL := keycloakURL(cr)
-	grafanaHost := cr.Name + "-grafana." + cr.Namespace + ".svc"
-	if cr.Spec.Grafana.ExternalHost != "" {
-		grafanaHost = cr.Spec.Grafana.ExternalHost + ":" + cr.Spec.Grafana.ExternalPort
-	}
+	keycloakURL := keycloakInternalURL(cr)
 	horreumEnv := []corev1.EnvVar{
 		{
 			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
@@ -37,8 +32,14 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			Value: url(cr.Spec.Keycloak.Route, "must-set-keycloak-route.io") + "/auth/realms/horreum",
 		},
 		{
+			// TODO: it's not possible to set up custom CA for OIDC
+			// https://github.com/quarkusio/quarkus/issues/18002
+			Name:  "QUARKUS_OIDC_TLS_VERIFICATION",
+			Value: "none",
+		},
+		{
 			Name:  "HORREUM_INTERNAL_URL",
-			Value: "http://" + cr.Name + "." + cr.Namespace + ".svc",
+			Value: innerProtocol(cr.Spec.Route) + cr.Name + "." + cr.Namespace + ".svc",
 		},
 		{
 			Name:  "HORREUM_KEYCLOAK_URL",
@@ -50,7 +51,15 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 		},
 		{
 			Name:  "HORREUM_GRAFANA_MP_REST_URL",
-			Value: "http://" + grafanaHost,
+			Value: grafanaInternalURL(cr),
+		},
+		{
+			Name:  "HORREUM_GRAFANA_MP_REST_TRUSTSTORE",
+			Value: "/etc/horreum/imports/service-ca.keystore",
+		},
+		{
+			Name:  "HORREUM_GRAFANA_MP_REST_TRUSTSTOREPASSWORD",
+			Value: "password",
 		},
 		// This is needed because Grafana doesn't support API keys for user management
 		secretEnv("HORREUM_GRAFANA_ADMIN_USER", grafanaAdminSecret(cr), corev1.BasicAuthUsernameKey),
@@ -61,6 +70,60 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			Name:  "JAVA_OPTIONS",
 			Value: javaOptions,
 		})
+	}
+	volumes := []corev1.Volume{
+		{
+			Name: "imports",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: "service-ca",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "service-ca.crt",
+					},
+				},
+			},
+		},
+	}
+	mounts := []corev1.VolumeMount{
+		{
+			Name:      "imports",
+			MountPath: "/etc/horreum/imports",
+		},
+	}
+	routeType := cr.Spec.Route.Type
+	if routeType == "passthrough" || routeType == "reencrypt" || routeType == "" {
+		secretName := cr.Name + "-app-certs"
+		if cr.Spec.Route.Type == "passthrough" {
+			secretName = cr.Spec.Route.TLS
+		}
+		volumes = append(volumes, corev1.Volume{
+			Name: "certs",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: secretName,
+				},
+			},
+		})
+		mounts = append(mounts, corev1.VolumeMount{
+			Name:      "certs",
+			MountPath: "/opt/certs",
+		})
+		horreumEnv = append(horreumEnv, corev1.EnvVar{
+			Name:  "QUARKUS_HTTP_SSL_CERTIFICATE_FILE",
+			Value: "/opt/certs/" + corev1.TLSCertKey,
+		}, corev1.EnvVar{
+			Name:  "QUARKUS_HTTP_SSL_CERTIFICATE_KEY_FILE",
+			Value: "/opt/certs/" + corev1.TLSPrivateKeyKey,
+		})
+	}
+	caCertArg := ""
+	if routeType == "reencrypt" || routeType == "" {
+		caCertArg = "--cacert /etc/ssl/certs/service-ca.crt"
 	}
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -82,11 +145,12 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						"sh", "-x", "-c", `
 							cp /deployments/imports/* /etc/horreum/imports
 							export KC_URL='` + keycloakURL + `'
-							export TOKEN=$$(curl -s $KC_URL/auth/realms/master/protocol/openid-connect/token -X POST -H 'content-type: application/x-www-form-urlencoded' -d 'username=$(KEYCLOAK_USER)&password=$(KEYCLOAK_PASSWORD)&grant_type=password&client_id=admin-cli' | jq -r .access_token)
-							export CLIENTID=$$(curl -s $KC_URL/auth/admin/realms/horreum/clients -H 'Authorization: Bearer '$TOKEN | jq -r '.[] | select(.clientId=="horreum") | .id')
-							export CLIENTSECRET=$$(curl -s $KC_URL/auth/admin/realms/horreum/clients/$CLIENTID/client-secret -X POST -H 'Authorization: Bearer '$TOKEN | jq -r '.value')
+							export TOKEN=$$(curl -s ` + caCertArg + ` $KC_URL/auth/realms/master/protocol/openid-connect/token -X POST -H 'content-type: application/x-www-form-urlencoded' -d 'username=$(KEYCLOAK_USER)&password=$(KEYCLOAK_PASSWORD)&grant_type=password&client_id=admin-cli' | jq -r .access_token)
+							export CLIENTID=$$(curl -s ` + caCertArg + ` $KC_URL/auth/admin/realms/horreum/clients -H 'Authorization: Bearer '$TOKEN | jq -r '.[] | select(.clientId=="horreum") | .id')
+							export CLIENTSECRET=$$(curl -s ` + caCertArg + ` $KC_URL/auth/admin/realms/horreum/clients/$CLIENTID/client-secret -X POST -H 'Authorization: Bearer '$TOKEN | jq -r '.value')
 							[ -n "$CLIENTSECRET" ] || exit 1;
 							echo $CLIENTSECRET > /etc/horreum/imports/clientsecret
+							keytool -keystore /etc/horreum/imports/service-ca.keystore -storepass password -noprompt -trustcacerts -import -alias service-ca -file /etc/ssl/certs/service-ca.crt
 						`,
 					},
 					Env: []corev1.EnvVar{
@@ -99,6 +163,11 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						{
 							Name:      "imports",
 							MountPath: "/etc/horreum/imports",
+						},
+						{
+							Name:      "service-ca",
+							MountPath: "/etc/ssl/certs/service-ca.crt",
+							SubPath:   "service-ca.crt",
 						},
 					},
 				},
@@ -114,23 +183,11 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							/deployments/horreum.sh
 						`,
 					},
-					Env: horreumEnv,
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      "imports",
-							MountPath: "/etc/horreum/imports",
-						},
-					},
+					Env:          horreumEnv,
+					VolumeMounts: mounts,
 				},
 			},
-			Volumes: []corev1.Volume{
-				{
-					Name: "imports",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
-					},
-				},
-			},
+			Volumes: volumes,
 		},
 	}
 }
@@ -140,17 +197,14 @@ func appService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
 			Namespace: cr.Namespace,
+			Annotations: map[string]string{
+				"service.beta.openshift.io/serving-cert-secret-name": cr.Name + "-app-certs",
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
-				{
-					Name: "http",
-					Port: int32(80),
-					TargetPort: intstr.IntOrString{
-						IntVal: 8080,
-					},
-				},
+				servicePort(cr.Spec.Route, 8080, 8443),
 			},
 			Selector: map[string]string{
 				"app":     cr.Name,

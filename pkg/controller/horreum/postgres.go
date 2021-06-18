@@ -153,6 +153,9 @@ func postgresService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-db",
 			Namespace: cr.Namespace,
+			Annotations: map[string]string{
+				"service.beta.openshift.io/serving-cert-secret-name": cr.Name + "-postgres",
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,

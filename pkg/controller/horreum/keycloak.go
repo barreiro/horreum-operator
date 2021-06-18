@@ -5,7 +5,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
@@ -56,13 +55,18 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			MountPath: "/etc/keycloak/imports",
 		},
 	}
-	if cr.Spec.Keycloak.Route.TLS != "" {
+	routeType := cr.Spec.Keycloak.Route.Type
+	if routeType == "passthrough" || routeType == "reencrypt" || routeType == "" {
+		secretName := cr.Name + "-keycloak-certs"
+		if routeType == "passthrough" {
+			secretName = cr.Spec.Keycloak.Route.TLS
+		}
 		// TODO: setup X509_CA_BUNDLE
 		volumes = append(volumes, corev1.Volume{
 			Name: "certs",
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: cr.Spec.Keycloak.Route.TLS,
+					SecretName: secretName,
 				},
 			},
 		})
@@ -106,7 +110,7 @@ func keycloakPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						},
 						{
 							Name:  "DB_PORT",
-							Value: withDefaultInt(cr.Spec.Keycloak.Database.Port, dbDefaultPort(cr)),
+							Value: withDefaultInt(cr.Spec.Keycloak.Database.Port, 5432),
 						},
 						{
 							Name:  "DB_DATABASE",
@@ -134,17 +138,14 @@ func keycloakService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-keycloak",
 			Namespace: cr.Namespace,
+			Annotations: map[string]string{
+				"service.beta.openshift.io/serving-cert-secret-name": cr.Name + "-keycloak-certs",
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
-				{
-					Name: "http",
-					Port: int32(80),
-					TargetPort: intstr.IntOrString{
-						IntVal: 8080,
-					},
-				},
+				servicePort(cr.Spec.Keycloak.Route, 8080, 8443),
 			},
 			Selector: map[string]string{
 				"app":     cr.Name,
@@ -154,58 +155,6 @@ func keycloakService(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
 	}
 }
 
-func keycloakServiceSecure(cr *hyperfoilv1alpha1.Horreum) *corev1.Service {
-	// Openshift routes cannot select port
-	return &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-keycloak-secure",
-			Namespace: cr.Namespace,
-		},
-		Spec: corev1.ServiceSpec{
-			Type: corev1.ServiceTypeClusterIP,
-			Ports: []corev1.ServicePort{
-				{
-					Name: "https",
-					Port: int32(443),
-					TargetPort: intstr.IntOrString{
-						IntVal: 8443,
-					},
-				},
-			},
-			Selector: map[string]string{
-				"app":     cr.Name,
-				"service": "keycloak",
-			},
-		},
-	}
-}
-
-func keycloakRoute(cr *hyperfoilv1alpha1.Horreum) *routev1.Route {
-	subdomain := ""
-	if cr.Spec.Keycloak.Route.Host == "" {
-		subdomain = cr.Name + "-keycloak"
-	}
-	svc := cr.Name + "-keycloak-secure"
-	tls := &routev1.TLSConfig{
-		Termination: routev1.TLSTerminationPassthrough,
-	}
-	if cr.Spec.Keycloak.Route.TLS == "" {
-		svc = cr.Name + "-keycloak"
-		tls = nil
-	}
-	return &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-keycloak",
-			Namespace: cr.Namespace,
-		},
-		Spec: routev1.RouteSpec{
-			Host:      cr.Spec.Keycloak.Route.Host,
-			Subdomain: subdomain,
-			To: routev1.RouteTargetReference{
-				Kind: "Service",
-				Name: svc,
-			},
-			TLS: tls,
-		},
-	}
+func keycloakRoute(cr *hyperfoilv1alpha1.Horreum, r *ReconcileHorreum) (*routev1.Route, error) {
+	return route(cr.Spec.Keycloak.Route, "-keycloak", cr, r)
 }

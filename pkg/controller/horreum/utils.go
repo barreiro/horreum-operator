@@ -2,6 +2,7 @@ package horreum
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"strconv"
 	"time"
@@ -11,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func withDefault(custom string, def string) string {
@@ -28,7 +30,7 @@ func ifThenElse(condition bool, then string, els string) string {
 }
 
 func url(route hyperfoilv1alpha1.RouteSpec, defaultHost string) string {
-	return ifThenElse(route.TLS == "", "http://", "https://") + withDefault(route.Host, defaultHost)
+	return ifThenElse(route.Type == "http", "http://", "https://") + withDefault(route.Host, defaultHost)
 }
 
 func withDefaultInt(custom int32, def int32) string {
@@ -79,20 +81,39 @@ func secretEnv(name string, secret string, key string) corev1.EnvVar {
 }
 
 func tls(r *ReconcileHorreum, cr *hyperfoilv1alpha1.Horreum, route hyperfoilv1alpha1.RouteSpec) (*routev1.TLSConfig, error) {
-	if route.TLS == "" {
+	switch cr.Spec.Route.Type {
+	case "http":
 		return nil, nil
+	// passthrough route must not set certs
+	case "passthrough":
+		return &routev1.TLSConfig{
+			Termination:                   routev1.TLSTerminationPassthrough,
+			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
+		}, nil
 	}
 	tlsSecret := corev1.Secret{}
-	if error := r.client.Get(context.TODO(), types.NamespacedName{Name: route.TLS, Namespace: cr.Namespace}, &tlsSecret); error != nil {
-		updateStatus(r, cr, "Error", "Cannot find secret "+route.TLS)
-		return nil, error
+	if cr.Spec.Route.TLS != "" {
+		if error := r.client.Get(context.TODO(), types.NamespacedName{Name: cr.Spec.Route.TLS, Namespace: cr.Namespace}, &tlsSecret); error != nil {
+			updateStatus(r, cr, "Error", "Cannot find secret "+route.TLS)
+			return nil, error
+		}
 	}
 	cacert := ""
 	if bytes, ok := tlsSecret.Data["ca.crt"]; ok {
 		cacert = string(bytes)
 	}
+	var termination routev1.TLSTerminationType
+	switch cr.Spec.Route.Type {
+	case "edge":
+		termination = routev1.TLSTerminationEdge
+	case "reencrypt", "":
+		termination = routev1.TLSTerminationReencrypt
+	default:
+		log.Info("Invalid route type: " + cr.Spec.Route.Type)
+		return nil, errors.New("Invalid route type: " + cr.Spec.Route.Type)
+	}
 	return &routev1.TLSConfig{
-		Termination:                   routev1.TLSTerminationEdge,
+		Termination:                   termination,
 		InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
 		Certificate:                   string(tlsSecret.Data[corev1.TLSCertKey]),
 		Key:                           string(tlsSecret.Data[corev1.TLSPrivateKeyKey]),
@@ -124,4 +145,32 @@ func route(route hyperfoilv1alpha1.RouteSpec, suffix string, cr *hyperfoilv1alph
 			TLS: tls,
 		},
 	}, nil
+}
+
+func innerProtocol(route hyperfoilv1alpha1.RouteSpec) string {
+	if route.Type == "http" || route.Type == "edge" {
+		return "http://"
+	} else {
+		return "https://"
+	}
+}
+
+func servicePort(route hyperfoilv1alpha1.RouteSpec, httpPort int32, httpsPort int32) corev1.ServicePort {
+	if route.Type == "http" || route.Type == "edge" {
+		return corev1.ServicePort{
+			Name: "http",
+			Port: int32(80),
+			TargetPort: intstr.IntOrString{
+				IntVal: httpPort,
+			},
+		}
+	} else {
+		return corev1.ServicePort{
+			Name: "https",
+			Port: int32(443),
+			TargetPort: intstr.IntOrString{
+				IntVal: httpsPort,
+			},
+		}
+	}
 }

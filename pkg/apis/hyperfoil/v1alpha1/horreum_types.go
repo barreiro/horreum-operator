@@ -16,22 +16,31 @@ type DatabaseSpec struct {
 	Secret string `json:"secret,omitempty"`
 }
 
-// RouteSpec defines the route
+// RouteSpec defines the route for external access.
 type RouteSpec struct {
-	// Hostname for external access
+	// Host for the route leading to Controller REST endpoint. Example: horreum.apps.mycloud.example.com
 	Host string `json:"host,omitempty"`
-	// Optional; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
+	// Either 'http' (for plain-text routes - not recommended), 'edge', 'reencrypt' or 'passthrough'
+	Type string `json:"type,omitempty"`
+	// Optional for edge and reencrypt routes, required for passthrough; Name of the secret hosting `tls.crt`, `tls.key` and optionally `ca.crt`
 	TLS string `json:"tls,omitempty"`
+}
+
+// ExternalSpec defines endpoints for provided component (not deployed by this operator)
+type ExternalSpec struct {
+	// Public facing URI - Horreum will send this URI to the clients.
+	PublicUri string `json:"publicUri,omitempty"`
+	// Internal URI - Horreum will use this for communication but won't disclose that.
+	InternalUri string `json:"internalUri,omitempty"`
 }
 
 // KeycloakSpec defines Keycloak setup
 type KeycloakSpec struct {
-	// Set to true if the Keycloak instance should not be deployed
-	External bool `json:"external,omitempty"`
+	// When this is set Keycloak instance will not be deployed and Horreum will use this external instance.
+	External ExternalSpec `json:"external,omitempty"`
 	// Image that should be used for Keycloak deployment. Defaults to quay.io/keycloak/keycloak:latest
 	Image string `json:"image,omitempty"`
 	// Route for external access to the Keycloak instance.
-	// When `external` is set to true, this will be used for internal access as well.
 	Route RouteSpec `json:"route,omitempty"`
 	// Secret used for admin access to the deployed Keycloak instance. Created if does not exist.
 	// Must contain keys `username` and `password`.
@@ -42,10 +51,8 @@ type KeycloakSpec struct {
 
 // PostgresSpec defines PostgreSQL database setup
 type PostgresSpec struct {
-	// Hostname of the external database. If empty, database will be deployed by this operator.
-	ExternalHost string `json:"externalHost,omitempty"`
-	// Port of the external database. Defaults to 5432.
-	ExternalPort int32 `json:"externalPort,omitempty"`
+	// True (or omitted) to deploy PostgreSQL database
+	Enabled *bool `json:"enabled,omitempty"`
 	// Image used for PostgreSQL deployment. Defaults to registry.redhat.io/rhel8/postgresql-12:latest
 	Image string `json:"image,omitempty"`
 	// Secret used for unrestricted access to the database. Created if does not exist.
@@ -67,10 +74,8 @@ type ReportSpec struct {
 
 // GrafanaSpec defines Grafana setup
 type GrafanaSpec struct {
-	// Hostname of the external Grafana. If empty, an instance of Grafana will be deployed
-	ExternalHost string `json:"externalHost,omitempty"`
-	// Port of the external Grafana. Defaults to 3000.
-	ExternalPort string `json:"externalPort,omitempty"`
+	// When this is set Grafana instance will not be deployed and Horreum will use this external instance.
+	External ExternalSpec `json:"external,omitempty"`
 	// Secret used for admin access to Grafana. Created if it does not exist.
 	// Must contain keys `username` and `password`.
 	AdminSecret string `json:"adminSecret,omitempty"`

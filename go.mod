@@ -4,7 +4,6 @@ go 1.13
 
 require (
 	github.com/containerd/fifo v0.0.0-20191213151349-ff969a566b00 // indirect
-	github.com/docker/docker v1.4.2-0.20181221150755-2cb26cfe9cbf
 	github.com/go-logr/logr v0.1.0
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/operator-framework/operator-sdk v0.16.1-0.20200326202950-b0b67a4921ae
