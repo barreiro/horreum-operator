@@ -93,6 +93,35 @@ func grafanaPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 			Name:      "imports",
 			MountPath: "/etc/grafana/imports",
 		},
+		{
+			Name:      "service-ca",
+			MountPath: "/etc/ssl/certs/service-ca.crt",
+			SubPath:   "service-ca.crt",
+		},
+	}
+	if cr.Spec.Keycloak.Route.Type == "reencrypt" {
+		env = append(env, corev1.EnvVar{
+			Name:  "GF_AUTH_GENERIC_OAUTH_TLS_CLIENT_CA",
+			Value: "/etc/ssl/certs/service-ca.crt",
+		})
+	} else if cr.Spec.Keycloak.Route.Type == "passthrough" {
+		volumes = append(volumes, corev1.Volume{
+			Name: "keycloak-ca",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: cr.Spec.Keycloak.Route.TLS,
+				},
+			},
+		})
+		mounts = append(mounts, corev1.VolumeMount{
+			Name:      "keycloak-ca",
+			MountPath: "/opt/certs/keycloak-ca.crt",
+			SubPath:   "ca.crt",
+		})
+		env = append(env, corev1.EnvVar{
+			Name:  "GF_AUTH_GENERIC_OAUTH_TLS_CLIENT_CA",
+			Value: "/opt/certs/keycloak-ca.crt",
+		})
 	}
 
 	if routeType == "passthrough" || routeType == "reencrypt" || routeType == "" {
