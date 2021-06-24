@@ -60,6 +60,8 @@ type PostgresSpec struct {
 	AdminSecret string `json:"adminSecret,omitempty"`
 	// Name of PVC where the database will store the data. If empty, ephemeral storage will be used.
 	PersistentVolumeClaim string `json:"persistentVolumeClaim,omitempty"`
+	// Id of the user the container should run as
+	User *int64 `json:"user,omitempty"`
 }
 
 // ReportSpec defines hyperfoil-report pod setup

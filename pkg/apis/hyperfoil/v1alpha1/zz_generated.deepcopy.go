@@ -185,6 +185,11 @@ func (in *PostgresSpec) DeepCopyInto(out *PostgresSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.User != nil {
+		in, out := &in.User, &out.User
+		*out = new(int64)
+		**out = **in
+	}
 	return
 }
 

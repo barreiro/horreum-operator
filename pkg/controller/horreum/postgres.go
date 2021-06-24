@@ -66,7 +66,9 @@ func postgresPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 	image := dbImage(cr)
 	// TODO: make this configurable: Official image uses 999, RH image has 26
 	var userId = int64(26)
-	if strings.HasPrefix(image, "docker.io/postgres") {
+	if cr.Spec.Postgres.User != nil {
+		userId = *cr.Spec.Postgres.User
+	} else if strings.HasPrefix(image, "docker.io/postgres") {
 		userId = int64(999)
 	}
 	return &corev1.Pod{
