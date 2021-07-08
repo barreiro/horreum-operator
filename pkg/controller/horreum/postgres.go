@@ -21,8 +21,8 @@ func postgresConfigMap(cr *hyperfoilv1alpha1.Horreum) *corev1.ConfigMap {
 		},
 		Data: map[string]string{
 			"init_keycloak.sh": `
-				if psql -t -c "SELECT 1 FROM pg_roles WHERE rolname = '$(KEYCLOAK_USER)';" | grep -q 1; then
-					echo "Database role $(KEYCLOAK_USER) already exists.";
+				if psql -t -c "SELECT 1 FROM pg_roles WHERE rolname = '$KEYCLOAK_USER';" | grep -q 1; then
+					echo "Database role $KEYCLOAK_USER already exists.";
 				else
 					psql -c "CREATE ROLE \"$KEYCLOAK_USER\" noinherit login password '$KEYCLOAK_PASSWORD';";
 				fi
