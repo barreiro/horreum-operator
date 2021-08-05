@@ -146,6 +146,17 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 							cp /deployments/imports/* /etc/horreum/imports
 							export KC_URL='` + keycloakURL + `'
 							export TOKEN=$$(curl -s ` + caCertArg + ` $KC_URL/auth/realms/master/protocol/openid-connect/token -X POST -H 'content-type: application/x-www-form-urlencoded' -d 'username=$(KEYCLOAK_USER)&password=$(KEYCLOAK_PASSWORD)&grant_type=password&client_id=admin-cli' | jq -r .access_token)
+							USER_READER_PWD=$$(openssl rand -base64 32)
+							curl -s $KC_URL/auth/admin/realms/horreum/users -H "Authorization: Bearer "$TOKEN -X POST -d '{"username":"__user_reader","enabled":true,"credentials":[{"type":"password","value":"'$USER_READER_PWD'"}],"email":"none@example.com"}' -H 'content-type: application/json'
+                            USER_READER_ID=$(curl -s $KC_URL/auth/admin/realms/horreum/users -H "Authorization: Bearer "$TOKEN | jq -r '.[] | select(.username=="__user_reader").id')
+							OFFLINE_ACCESS_ID=$(curl -s $KC_URL/auth/admin/realms/horreum/roles/offline_access -H "Authorization: Bearer "$TOKEN | jq -r '.id')
+							curl -s $KC_URL/auth/admin/realms/horreum/users/$USER_READER_ID/role-mappings/realm -H "Authorization: Bearer "$TOKEN -H 'content-type: application/json' -X POST -d '[{"id":"'$OFFLINE_ACCESS_ID'","name":"offline_access"}]'
+                            REALM_MANAGEMENT_CLIENTID=$(curl -s $KC_URL/auth/admin/realms/horreum/clients -H "Authorization: Bearer "$TOKEN | jq -r '.[] | select(.clientId=="realm-management").id')
+                            VIEW_USERS_ID=$(curl -s $KC_URL/auth/admin/realms/horreum/clients/$REALM_MANAGEMENT_CLIENTID/roles/view-users -H "Authorization: Bearer "$TOKEN | jq -r '.id')
+							curl -s $KC_URL/auth/admin/realms/horreum/users/$USER_READER_ID/role-mappings/clients/$REALM_MANAGEMENT_CLIENTID -H "Authorization: Bearer "$TOKEN -H 'content-type: application/json' -X POST -d '[{"id":"'$VIEW_USERS_ID'","name":"view-users"}]'
+							USER_READER_TOKEN=$(curl -s -X POST $KC_URL/auth/realms/horreum/protocol/openid-connect/token -H 'content-type: application/x-www-form-urlencoded' -d 'username=__user_reader&password='$USER_READER_PWD'&grant_type=password&client_id=horreum-ui&scope=offline_access' | jq -r .refresh_token)
+							echo $USER_READER_TOKEN >> /etc/horreum/imports/user_reader_token
+
 							export CLIENTID=$$(curl -s ` + caCertArg + ` $KC_URL/auth/admin/realms/horreum/clients -H 'Authorization: Bearer '$TOKEN | jq -r '.[] | select(.clientId=="horreum") | .id')
 							export CLIENTSECRET=$$(curl -s ` + caCertArg + ` $KC_URL/auth/admin/realms/horreum/clients/$CLIENTID/client-secret -X POST -H 'Authorization: Bearer '$TOKEN | jq -r '.value')
 							[ -n "$CLIENTSECRET" ] || exit 1;
@@ -180,6 +191,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum) *corev1.Pod {
 						"sh", "-c", `
 							export QUARKUS_OIDC_CREDENTIALS_SECRET=$$(cat /etc/horreum/imports/clientsecret)
 							export HORREUM_GRAFANA_API_KEY=$$(cat /etc/horreum/imports/grafana_api_key)
+							export HORREUM_KEYCLOAK_USER_READER_TOKEN=$$(cat /etc/horreum/imports/user_reader_token)
 							/deployments/horreum.sh
 						`,
 					},
