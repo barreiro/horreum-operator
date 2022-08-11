@@ -1,0 +1,20 @@
+# permissions for end users to view horreums.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: horreum-viewer-role
+rules:
+- apiGroups:
+  - hyperfoil.io
+  resources:
+  - horreums
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - hyperfoil.io
+  resources:
+  - horreums/status
+  verbs:
+  - get

@@ -1,0 +1,24 @@
+# permissions for end users to edit horreums.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: horreum-editor-role
+rules:
+- apiGroups:
+  - hyperfoil.io
+  resources:
+  - horreums
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - hyperfoil.io
+  resources:
+  - horreums/status
+  verbs:
+  - get
