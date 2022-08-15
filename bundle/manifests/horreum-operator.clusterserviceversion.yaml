@@ -190,7 +190,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/hyperfoil/horreum-operator:latest
+                image: quay.io/hyperfoil/horreum-operator:v0.0.2
                 livenessProbe:
                   httpGet:
                     path: /healthz
