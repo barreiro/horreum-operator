@@ -100,8 +100,9 @@ func (r *HorreumReconciler) Reconcile(ctx context.Context, request ctrl.Request)
 	}
 
 	if cr.Status.Status != "Ready" {
+		adminSecret := horreumAdminSecret(cr)
 		cr.Status.Status = "Ready"
-		cr.Status.Reason = "Reconciliation succeeded."
+		cr.Status.Reason = "For admin (" + adminSecret + ") password run: kubectl get secret " + adminSecret + " -o go-template='{{.data.password|base64decode}}'"
 		cr.Status.LastUpdate = metav1.Now()
 	}
 
@@ -160,6 +161,11 @@ func (r *HorreumReconciler) Reconcile(ctx context.Context, request ctrl.Request)
 	}
 	grafanaAdminSecret := newSecret(cr, grafanaAdminSecret(cr))
 	if err := ensureSame(r, cr, logger, grafanaAdminSecret, &corev1.Secret{}, nocompare,
+		checkSecret(corev1.BasicAuthUsernameKey, corev1.BasicAuthPasswordKey)); err != nil {
+		return reconcile.Result{}, err
+	}
+	horreumAdminSecret := newSecret(cr, horreumAdminSecret(cr))
+	if err := ensureSame(r, cr, logger, horreumAdminSecret, &corev1.Secret{}, nocompare,
 		checkSecret(corev1.BasicAuthUsernameKey, corev1.BasicAuthPasswordKey)); err != nil {
 		return reconcile.Result{}, err
 	}

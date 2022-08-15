@@ -39,6 +39,10 @@ spec:
       jsonPath: .status.status
       name: Status
       type: string
+    - description: Reason for status
+      jsonPath: .status.reason
+      name: Reason
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -60,6 +64,12 @@ spec:
           spec:
             description: HorreumSpec defines the desired state of Horreum
             properties:
+              adminSecret:
+                description: Name of secret resource with data `username` and `password`.
+                  This will be the first user that get's created in Horreum with the
+                  `admin` role, therefore it can create other users and teams. Created
+                  automatically if it does not exist.
+                type: string
               database:
                 description: Database coordinates for Horreum data. Besides `username`
                   and `password` the secret must also contain key `dbsecret` that

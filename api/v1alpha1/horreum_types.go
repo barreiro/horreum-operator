@@ -102,6 +102,10 @@ type GrafanaSpec struct {
 
 // HorreumSpec defines the desired state of Horreum
 type HorreumSpec struct {
+	// Name of secret resource with data `username` and `password`. This will be the first user
+	// that get's created in Horreum with the `admin` role, therefore it can create other users and teams.
+	// Created automatically if it does not exist.
+	AdminSecret string `json:"adminSecret,omitempty"`
 	// Route for external access
 	Route RouteSpec `json:"route,omitempty"`
 	// Alternative service type when routes are not available (e.g. on vanilla K8s)
@@ -143,6 +147,7 @@ type HorreumStatus struct {
 // +kubebuilder:printcolumn:name="Hyperfoil Report Route",type="string",JSONPath=".spec.report.route",description="Hyperfoil Report route"
 // +kubebuilder:printcolumn:name="Grafana Route",type="string",JSONPath=".spec.grafana.route",description="Grafana route"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.status",description="Overall status"
+// +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.reason",description="Reason for status"
 type Horreum struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

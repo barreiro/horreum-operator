@@ -33,6 +33,10 @@ func grafanaAdminSecret(cr *hyperfoilv1alpha1.Horreum) string {
 	return withDefault(cr.Spec.Grafana.AdminSecret, cr.Name+"-grafana-admin")
 }
 
+func horreumAdminSecret(cr *hyperfoilv1alpha1.Horreum) string {
+	return withDefault(cr.Spec.AdminSecret, cr.Name+"-admin")
+}
+
 func dbImage(cr *hyperfoilv1alpha1.Horreum, useRedHatImage bool) string {
 	return withDefault(cr.Spec.Postgres.Image,
 		ifThenElse(useRedHatImage, "registry.redhat.io/rhel8/postgresql-12:latest", "docker.io/library/postgres:14.4"))

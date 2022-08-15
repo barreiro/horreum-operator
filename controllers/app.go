@@ -152,6 +152,8 @@ func appPod(cr *hyperfoilv1alpha1.Horreum, keycloakPublicUrl, grafanaPublicUrl, 
 					Env: []corev1.EnvVar{
 						secretEnv("KEYCLOAK_USER", keycloakAdminSecret(cr), corev1.BasicAuthUsernameKey),
 						secretEnv("KEYCLOAK_PASSWORD", keycloakAdminSecret(cr), corev1.BasicAuthPasswordKey),
+						secretEnv("ADMIN_USERNAME", horreumAdminSecret(cr), corev1.BasicAuthUsernameKey),
+						secretEnv("ADMIN_PASSWORD", horreumAdminSecret(cr), corev1.BasicAuthPasswordKey),
 						{
 							Name:  "KC_URL",
 							Value: keycloakInternalURL,
