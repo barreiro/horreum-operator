@@ -26,6 +26,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
+    categories: Integration & Delivery
     operators.operatorframework.io/builder: operator-sdk-v1.10.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
   name: horreum-operator.v0.0.2
@@ -285,6 +286,7 @@ spec:
   - email: wreicher@redhat.com
     name: Will Reichert
   maturity: alpha
+  minKubeVersion: "1.16"
   provider:
     name: Red Hat, Inc.
     url: https://horreum.hyperfoil.io

@@ -4,6 +4,7 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
+    categories: Integration & Delivery
   name: horreum-operator.v0.0.0
   namespace: placeholder
 spec:
@@ -67,6 +68,7 @@ spec:
   - email: wreicher@redhat.com
     name: Will Reichert
   maturity: alpha
+  minKubeVersion: "1.16"
   provider:
     name: Red Hat, Inc.
     url: https://horreum.hyperfoil.io
