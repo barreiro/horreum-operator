@@ -17,8 +17,12 @@ metadata:
       ]
     capabilities: Basic Install
     categories: Integration & Delivery
+    containerImage: quay.io/hyperfoil/horreum-operator:v0.0.2
+    description: Performance results repository
     operators.operatorframework.io/builder: operator-sdk-v1.10.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+    repository: https://github.com/hyperfoil/horreum-operator
+    support: Red Hat Application Runtimes Performance Team
   name: horreum-operator.v0.0.2
   namespace: placeholder
 spec:
