@@ -232,6 +232,7 @@ func (r *HorreumReconciler) Reconcile(ctx context.Context, request ctrl.Request)
 			}
 		}
 	}
+	cr.Status.KeycloakUrl = keycloakPublicUrl
 
 	keycloakPod := keycloakPod(cr, keycloakPublicUrl)
 	if cr.Spec.Keycloak.External.PublicUri != "" {
@@ -290,6 +291,7 @@ func (r *HorreumReconciler) Reconcile(ctx context.Context, request ctrl.Request)
 			}
 		}
 	}
+	cr.Status.GrafanaUrl = grafanaPublicUrl
 
 	grafanaPod := grafanaPod(cr, r, keycloakPublicUrl, grafanaPublicUrl)
 	if cr.Spec.Grafana.External.PublicUri != "" {
@@ -346,6 +348,7 @@ func (r *HorreumReconciler) Reconcile(ctx context.Context, request ctrl.Request)
 			return reconcile.Result{Requeue: true}, nil
 		}
 	}
+	cr.Status.PublicUrl = appPublicUrl
 
 	appPod := appPod(cr, keycloakPublicUrl, grafanaPublicUrl, appPublicUrl)
 	if err := ensureSame(r, cr, logger, appPod, &corev1.Pod{}, comparePods, checkPod); err != nil {

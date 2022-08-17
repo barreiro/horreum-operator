@@ -133,6 +133,12 @@ type HorreumStatus struct {
 	LastUpdate metav1.Time `json:"lastUpdate,omitempty"`
 	// Explanation for the current status.
 	Reason string `json:"reason,omitempty"`
+	// Public URL of the Horreum application
+	PublicUrl string `json:"publicUrl,omitempty"`
+	// Public URL of Keycloak
+	KeycloakUrl string `json:"keycloakUrl,omitempty"`
+	// Public URL of Grafana
+	GrafanaUrl string `json:"grafanaUrl,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -142,12 +148,11 @@ type HorreumStatus struct {
 // +kubebuilder:resource:path=horreums,scope=Namespaced
 // +kubebuilder:categories=all,hyperfoil
 // +kubebuilder:resource:shortName=hrm
-// +kubebuilder:printcolumn:name="Route",type="string",JSONPath=".spec.route",description="Horreum route"
-// +kubebuilder:printcolumn:name="Keycloak Route",type="string",JSONPath=".spec.keycloak.route",description="Keycloak route"
-// +kubebuilder:printcolumn:name="Hyperfoil Report Route",type="string",JSONPath=".spec.report.route",description="Hyperfoil Report route"
-// +kubebuilder:printcolumn:name="Grafana Route",type="string",JSONPath=".spec.grafana.route",description="Grafana route"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.status",description="Overall status"
 // +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.reason",description="Reason for status"
+// +kubebuilder:printcolumn:name="URL",type="string",JSONPath=".status.publicUrl",description="Horreum URL"
+// +kubebuilder:printcolumn:name="Keycloak URL",type="string",JSONPath=".status.keycloakUrl",description="Keycloak URL"
+// +kubebuilder:printcolumn:name="Grafana URL",type="string",JSONPath=".status.grafanaUrl",description="Grafana URL"
 type Horreum struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

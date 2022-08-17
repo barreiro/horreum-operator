@@ -17,22 +17,6 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: Horreum route
-      jsonPath: .spec.route
-      name: Route
-      type: string
-    - description: Keycloak route
-      jsonPath: .spec.keycloak.route
-      name: Keycloak Route
-      type: string
-    - description: Hyperfoil Report route
-      jsonPath: .spec.report.route
-      name: Hyperfoil Report Route
-      type: string
-    - description: Grafana route
-      jsonPath: .spec.grafana.route
-      name: Grafana Route
-      type: string
     - description: Overall status
       jsonPath: .status.status
       name: Status
@@ -40,6 +24,18 @@ spec:
     - description: Reason for status
       jsonPath: .status.reason
       name: Reason
+      type: string
+    - description: Horreum URL
+      jsonPath: .status.publicUrl
+      name: URL
+      type: string
+    - description: Keycloak URL
+      jsonPath: .status.keycloakUrl
+      name: Keycloak URL
+      type: string
+    - description: Grafana URL
+      jsonPath: .status.grafanaUrl
+      name: Grafana URL
       type: string
     name: v1alpha1
     schema:
@@ -257,9 +253,18 @@ spec:
           status:
             description: HorreumStatus defines the observed state of Horreum
             properties:
+              grafanaUrl:
+                description: Public URL of Grafana
+                type: string
+              keycloakUrl:
+                description: Public URL of Keycloak
+                type: string
               lastUpdate:
                 description: Last time state has changed.
                 format: date-time
+                type: string
+              publicUrl:
+                description: Public URL of the Horreum application
                 type: string
               reason:
                 description: Explanation for the current status.
