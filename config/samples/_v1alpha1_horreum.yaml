@@ -1,12 +1,6 @@
 apiVersion: hyperfoil.io/v1alpha1
 kind: Horreum
 metadata:
-  name: example-horreum
+  name: horreum
 spec:
-  route:
-    host: horreum.apps.mycloud.example.com
-  keycloak:
-    route:
-      host: keycloak.apps.mycloud.example.com
-  postgres:
-    persistentVolumeClaim: horreum-postgres
+  nodeHost: 127.0.0.1

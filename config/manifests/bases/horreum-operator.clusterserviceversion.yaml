@@ -68,9 +68,8 @@ spec:
   - email: wreicher@redhat.com
     name: Will Reichert
   maturity: alpha
-  minKubeVersion: "1.16"
+  minKubeVersion: 1.16.0
   provider:
     name: Red Hat, Inc.
     url: https://horreum.hyperfoil.io
-  replaces: horreum-operator.v0.0.1
   version: 0.0.0

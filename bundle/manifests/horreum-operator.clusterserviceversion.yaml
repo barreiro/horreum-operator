@@ -8,20 +8,10 @@ metadata:
           "apiVersion": "hyperfoil.io/v1alpha1",
           "kind": "Horreum",
           "metadata": {
-            "name": "example-horreum"
+            "name": "horreum"
           },
           "spec": {
-            "keycloak": {
-              "route": {
-                "host": "keycloak.apps.mycloud.example.com"
-              }
-            },
-            "postgres": {
-              "persistentVolumeClaim": "horreum-postgres"
-            },
-            "route": {
-              "host": "horreum.apps.mycloud.example.com"
-            }
+            "nodeHost": "127.0.0.1"
           }
         }
       ]
@@ -286,9 +276,8 @@ spec:
   - email: wreicher@redhat.com
     name: Will Reichert
   maturity: alpha
-  minKubeVersion: "1.16"
+  minKubeVersion: 1.16.0
   provider:
     name: Red Hat, Inc.
     url: https://horreum.hyperfoil.io
-  replaces: horreum-operator.v0.0.1
   version: 0.0.2
