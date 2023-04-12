@@ -66,6 +66,12 @@ SHELL = /usr/bin/env bash -o pipefail
 .PHONY: all
 all: build
 
+# Remove directories and all files ignored by git.
+.PHONY: clean
+clean:
+	rm -fr bin bundle
+	git clean -Xfd .
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
