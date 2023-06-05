@@ -137,6 +137,9 @@ func postgresPod(cr *hyperfoilv1alpha1.Horreum, r *HorreumReconciler) *corev1.Po
 		},
 		Spec: corev1.PodSpec{
 			InitContainers: initContainers,
+			SecurityContext: &corev1.PodSecurityContext{
+				FSGroup: &[]int64{userId}[0],
+			},
 			Containers: []corev1.Container{
 				{
 					Name:  "postgres",
@@ -149,7 +152,6 @@ func postgresPod(cr *hyperfoilv1alpha1.Horreum, r *HorreumReconciler) *corev1.Po
 						},
 					},
 					SecurityContext: &corev1.SecurityContext{
-						// Run with postgres UID - the same should be set on the PVC
 						RunAsUser: &[]int64{userId}[0],
 					},
 					VolumeMounts: []corev1.VolumeMount{
