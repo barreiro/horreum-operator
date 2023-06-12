@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/hyperfoil/horreum-operator
-  newTag: v0.0.2
+  newTag: 0.7.9

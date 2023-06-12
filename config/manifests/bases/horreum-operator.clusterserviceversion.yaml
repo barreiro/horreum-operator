@@ -5,11 +5,11 @@ metadata:
     alm-examples: '[]'
     capabilities: Basic Install
     categories: Integration & Delivery
-    containerImage: quay.io/hyperfoil/horreum-operator:v0.0.2
+    containerImage: quay.io/hyperfoil/horreum-operator:0.7.9
     description: Performance results repository
     repository: https://github.com/hyperfoil/horreum-operator
     support: Red Hat Application Runtimes Performance Team
-  name: horreum-operator.v0.0.0
+  name: horreum-operator.0.0.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -76,4 +76,5 @@ spec:
   provider:
     name: Red Hat, Inc.
     url: https://horreum.hyperfoil.io
+  replaces: horreum-operator.v0.0.2
   version: 0.0.0
