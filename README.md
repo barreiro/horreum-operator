@@ -1,29 +1,28 @@
 # Horreum Operator
 
-This operator installs [Horreum](https://github.com/Hyperfoil/Horreum), services it depends on - PostgreSQL database and Keycloak SSO - and for convenience also [Hyperfoil Report](https://github.com/Hyperfoil/report).
+This operator installs [Horreum](https://github.com/Hyperfoil/Horreum) and services it depends on (Grafana, PostgreSQL database and Keycloak SSO)
+   
+## Deploy the operator in minikube
 
-See an [example](deploy/crds/hyperfoil.io_v1alpha1_horreum_cr.yaml) of the `horreum` resource:
+First start by [installing minikube](https://minikube.sigs.k8s.io/docs/start/). Start the cluster with `minikube start`. (*Suggestion:* use `minikube dashboard` to monitor the cluster) (*Note:* The QEMU driver on linux will not allow external access to the services in the cluster)
 
-```yaml
-apiVersion: hyperfoil.io/v1alpha1
-kind: Horreum
-metadata:
-  name: example-horreum
-spec:
-  route:
-    host: horreum.apps.mycloud.example.com
-  keycloak:
-    route:
-      host: keycloak.apps.mycloud.example.com
-  postgres:
-    persistentVolumeClaim: horreum-postgres
-  report:
-    route:
-      host: hyperfoil-report.apps.mycloud.example.com
-    persistentVolumeClaim: hyperfoil-report
-```
+Build and install Hyperfoil operator (Go 1.19 is required) with `make build install`.
 
-For detailed description of all properties [refer to the CRD](deploy/olm-catalog/horreum-operator/0.1.0/hyperfoil.io_horreums_crd.yaml).
+Deploy the example resource in [config/samples/_v1alpha1_horreum.yaml](config/samples/_v1alpha1_horreum.yaml) in the cluster with `make deploy-samples`
+
+Run the operator with `make run`. Once the horreum has started the operator can be stopped, as it only reacts to changes.
+
+Horreum should be running by now. The services can be accessed using the URLs at `minikube service --all --url`. (*Note:* It may be necessary to reconfigure the running Horreum custom resource with the external URLs to the services)
+
+### Undeploy 
+
+Undeploy samples from cluster `make undeploy-samples` (*Note:* this does not require the operator to be running)
+
+Stop the minikube cluster with `minikube stop`. Optionally delete the cluster with `minikube delete --all`
+     
+## Configuration
+
+For detailed description of all properties [refer to the CRD](config/crd/bases/hyperfoil.io_horreums.yaml).
 
 When using persistent volumes make sure that the access rights are set correctly and the pods have write access; in particular the PostgreSQL database requires that the mapped directory is owned by user with id `999`.
 
@@ -39,7 +38,7 @@ oc get secret $NAME-keycloak-admin -o json | \
     jq '{ user: .data.user | @base64d, password: .data.password | @base64d }'
 ```
 
-For details of roles in Horreum please refer to [its documentation](https://github.com/Hyperfoil/Horreum)
+For details of roles in Horreum please refer to [its documentation](https://horreum.hyperfoil.io/)
 
 ## Hyperfoil integration
 
