@@ -117,6 +117,10 @@ func appPod(cr *hyperfoilv1alpha1.Horreum, keycloakPublicUrl, grafanaPublicUrl, 
 		mounts = append(mounts, corev1.VolumeMount{
 			Name:      "certs",
 			MountPath: "/opt/certs",
+		}, corev1.VolumeMount{
+			Name:      "service-ca",
+			MountPath: "/etc/ssl/certs/service-ca.crt",
+			SubPath:   "service-ca.crt",
 		})
 		horreumEnv = append(horreumEnv, corev1.EnvVar{
 			Name:  "QUARKUS_HTTP_SSL_CERTIFICATE_FILE",
@@ -190,6 +194,7 @@ func appPod(cr *hyperfoilv1alpha1.Horreum, keycloakPublicUrl, grafanaPublicUrl, 
 					Image: appImage(cr),
 					Command: []string{
 						"sh", "-c", `
+							keytool -noprompt -import -alias service-ca -file /etc/ssl/certs/service-ca.crt -cacerts -storepass changeit
 							export QUARKUS_OIDC_CREDENTIALS_SECRET=$$(cat /etc/horreum/imports/clientsecret)
 							/deployments/horreum.sh
 						`,
